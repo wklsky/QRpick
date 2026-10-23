@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -51,7 +51,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -65,6 +64,9 @@ import com.aggapp.app.ui.components.BARCODE_FULLSCREEN_WIDTH
 import com.aggapp.app.ui.components.BARCODE_HEIGHT
 import com.aggapp.app.ui.components.BARCODE_WIDTH
 import com.aggapp.app.ui.components.BarcodeState
+import com.aggapp.app.ui.components.EmptyState
+import com.aggapp.app.ui.components.LoadingState
+import com.aggapp.app.ui.components.ScreenHeader
 import com.aggapp.app.ui.components.rememberBarcode
 import com.aggapp.app.ui.theme.AggColor
 import com.aggapp.app.ui.theme.AggType
@@ -107,23 +109,9 @@ fun IdCodeScreen(vm: MainViewModel) {
                     .verticalScroll(rememberScrollState()),
             ) {
                 // ===== 简洁头部（surface 底 + 主色点缀，与底部导航栏同风格）=====
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .statusBarsPadding()
-                        .padding(horizontal = Dimen.ScreenPadding, vertical = Dimen.SpaceM),
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            stringResource(R.string.idcode_title),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = AggType.ScreenTitle,
-                        )
+                ScreenHeader(
+                    title = stringResource(R.string.idcode_title),
+                    actions = {
                         IconButton(onClick = { vm.refreshAll(force = true) }) {
                             if (state.loading) {
                                 CircularProgressIndicator(
@@ -139,48 +127,50 @@ fun IdCodeScreen(vm: MainViewModel) {
                                 )
                             }
                         }
-                    }
+                    },
+                    // 分段控件与标题同属一块 surface：若挂到页头之外，会出现「白标题带 + 灰控件带」的底色断层
+                    headerBottom = {
+                        Spacer(Modifier.height(Dimen.SpaceM))
 
-                    Spacer(Modifier.height(12.dp))
-
-                    // ===== 平台切换：浅灰轨道分段控件（选中白底浮起）=====
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(ShapeControl)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                            .padding(Dimen.SpaceXS),
-                        horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceXS),
-                    ) {
-                        for (p in platforms) {
-                            val selected = p == state.selected
-                            Row(
-                                Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(Dimen.RadiusSmall))
-                                    .background(
-                                        if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
+                        // ===== 平台切换：浅灰轨道分段控件（选中白底浮起）=====
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(ShapeControl)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                .padding(Dimen.SpaceXS),
+                            horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceXS),
+                        ) {
+                            for (p in platforms) {
+                                val selected = p == state.selected
+                                Row(
+                                    Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(Dimen.RadiusSmall))
+                                        .background(
+                                            if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
+                                        )
+                                        .clickable { vm.select(p) }
+                                        .padding(vertical = Dimen.SpaceS),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        p.label,
+                                        style = AggType.SegmentedLabel,
+                                        maxLines = 1,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.onSurface
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                     )
-                                    .clickable { vm.select(p) }
-                                    .padding(vertical = Dimen.SpaceS),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    p.label,
-                                    style = AggType.SegmentedLabel,
-                                    maxLines = 1,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.onSurface
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                )
+                                }
                             }
                         }
-                    }
-                }
+                    },
+                )
 
                 val code = state.codes[state.selected]
                 if (code == null) {
@@ -191,14 +181,20 @@ fun IdCodeScreen(vm: MainViewModel) {
                         shape = MaterialTheme.shapes.large,
                     ) {
                         Box(
-                            Modifier.fillMaxWidth().height(220.dp),
+                            // 用 heightIn 而非固定 height：空态含图标与按钮，大字体下需要能撑高
+                            Modifier.fillMaxWidth().heightIn(min = 220.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                stringResource(R.string.idcode_empty),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            // 首屏拉取未完成时先给加载态，否则会先闪一下「暂无身份码」再出现码图
+                            if (state.loading) {
+                                LoadingState()
+                            } else {
+                                EmptyState(
+                                    text = stringResource(R.string.idcode_empty),
+                                    actionText = stringResource(R.string.action_refresh),
+                                    onAction = { vm.refreshAll(force = true) },
+                                )
+                            }
                         }
                     }
                 } else {

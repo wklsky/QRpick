@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -51,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aggapp.app.ui.components.ScreenHeader
 import com.aggapp.app.ui.theme.AggColor
 import com.aggapp.app.ui.theme.AggType
 import com.aggapp.app.ui.theme.Dimen
@@ -100,29 +100,10 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // ===== 简洁头部（surface 底，与身份码页/底部导航同风格）=====
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    Modifier
-                        .statusBarsPadding()
-                        .padding(horizontal = Dimen.ScreenPadding, vertical = Dimen.CardPaddingCompact),
-                ) {
-                    Text(
-                        stringResource(R.string.mine_title),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = AggType.ScreenTitle,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        stringResource(R.string.mine_subtitle),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = AggType.ScreenSubtitle,
-                    )
-                }
-            }
+            ScreenHeader(
+                title = stringResource(R.string.mine_title),
+                subtitle = stringResource(R.string.mine_subtitle),
+            )
             Column(
                 Modifier.padding(horizontal = Dimen.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp),

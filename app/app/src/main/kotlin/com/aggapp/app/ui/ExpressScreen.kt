@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,6 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aggapp.app.R
+import com.aggapp.app.ui.components.EmptyState
+import com.aggapp.app.ui.components.ErrorState
+import com.aggapp.app.ui.components.LoadingState
+import com.aggapp.app.ui.components.ScreenHeader
 import com.aggapp.app.ui.theme.AggColor
 import com.aggapp.app.ui.theme.AggType
 import com.aggapp.app.ui.theme.Brand
@@ -78,27 +81,10 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
             .clickable(interaction, indication = null) { viewModel.clearSearchResult() },
     ) {
         // ===== 简洁头部（surface 底，与身份码页/底部导航同风格）=====
-        Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
-            Row(
-                Modifier
-                    .statusBarsPadding()
-                    .padding(horizontal = Dimen.ScreenPadding, vertical = Dimen.CardPaddingCompact)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.express_title),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = AggType.ScreenTitle,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        stringResource(R.string.express_subtitle),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = AggType.ScreenSubtitle,
-                    )
-                }
+        ScreenHeader(
+            title = stringResource(R.string.express_title),
+            subtitle = stringResource(R.string.express_subtitle),
+            actions = {
                 // 手动刷新
                 IconButton(onClick = viewModel::refresh, enabled = !ui.loading) {
                     if (ui.loading) {
@@ -115,8 +101,8 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
                         )
                     }
                 }
-            }
-        }
+            },
+        )
 
         Column(
             Modifier
@@ -263,30 +249,18 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
             Spacer(Modifier.height(Dimen.SpaceS))
 
             // ============ 包裹列表（按驿站分组） ============
+            // 三态统一走 StateViews：加载居中占位、错误必须给重试出口、空态必须带图标位
             when {
                 ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Brand.Indigo)
+                    LoadingState()
                 }
 
-                ui.error != null -> Column(
-                    Modifier.fillMaxWidth().padding(top = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        ui.error ?: stringResource(R.string.error_unknown),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Spacer(Modifier.height(Dimen.SpaceS))
-                    Button(onClick = viewModel::refresh, shape = ShapeControl) {
-                        Text(stringResource(R.string.action_retry))
-                    }
-                }
-
-                ui.stations.isEmpty() -> Text(
-                    stringResource(R.string.express_empty),
-                    Modifier.fillMaxWidth().padding(top = 32.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                ui.error != null -> ErrorState(
+                    message = ui.error ?: stringResource(R.string.error_unknown),
+                    onRetry = viewModel::refresh,
                 )
+
+                ui.stations.isEmpty() -> EmptyState(stringResource(R.string.express_empty))
 
                 else -> LazyColumn {
                     ui.stations.forEach { group ->
