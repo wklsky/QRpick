@@ -9,16 +9,19 @@ import androidx.compose.material3.Shapes
  * @Description: 圆角令牌，原内联在 Theme.kt 尾部，迁出后供页面直接引用
  */
 
-/** 大卡 / BottomSheet：24dp */
+/** 大卡 / BottomSheet */
 val CardShapeLarge = RoundedCornerShape(Dimen.RadiusSheet)
 
-/** 中卡（列表项、查询卡）：16dp */
+/** 中卡（列表项、查询卡、凭证卡） */
 val CardShapeMedium = RoundedCornerShape(Dimen.RadiusCard)
 
-/** 输入类控件（输入框、按钮、分段轨道）：12dp */
+/** 输入类控件（输入框、按钮） */
 val ShapeControl = RoundedCornerShape(Dimen.RadiusControl)
 
-/** 胶囊（状态徽章、倒计时）：代替原 RoundedCornerShape(50) 的魔法值 */
+/** 状态印章：近方章，和胶囊徽章区分层级 */
+val ShapeStamp = RoundedCornerShape(Dimen.RadiusStamp)
+
+/** 胶囊（旧版徽章保留，供仍需圆润语义的小标记使用） */
 val ShapePill = RoundedCornerShape(percent = 50)
 
 /**

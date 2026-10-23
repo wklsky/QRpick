@@ -1,5 +1,6 @@
 package com.aggapp.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
@@ -17,10 +18,20 @@ import androidx.compose.ui.graphics.Color
  */
 object AggColor {
     /** 登录态"已登录"：与 error 明确区分，防止用户把绿色误读为异常态 */
-    private val LoggedInLight = Color(0xFF34C759)
+    private val LoggedInLight = Color(0xFF1B7A4B)
 
     /** 深色下的系统绿：亮绿在深底上会过于刺眼，改用低饱和档 */
-    private val LoggedInDark = Color(0xFF30D158)
+    private val LoggedInDark = Color(0xFF4BD08A)
+
+    /**
+     * 信号色（仓库地标黄）：主行动、当前平台标记、待取件徽章。
+     * 深色下提亮一档，避免大面积黄在暗背景上发灰。
+     */
+    private val SignalLight = Brand.Signal
+    private val SignalDark = Color(0xFFFFD43B)
+
+    /** 信号色上的文字恒为近黑——黄底白字对比度不足，会糊成一片 */
+    val OnSignal = Brand.SignalInk
 
     /**
      * 条码画布：恒为白底黑条。
@@ -35,8 +46,8 @@ object AggColor {
     /**
      * 品牌色上的前景。
      *
-     * Brand.Indigo / Violet 等品牌色本身不随主题变化，因此其上的文字与进度圈
-     * 不能用 colorScheme.onPrimary——深色模式下的 onPrimary 是深蓝，压在靛蓝底上会糊。
+     * 黄底上不能用 colorScheme.onPrimary——深色模式下 onPrimary 是浅色，
+     * 压在黄底上直接失去可读性。
      */
     val OnBrand = Color.White
 
@@ -67,5 +78,10 @@ object AggColor {
     val loggedIn: Color
         @Composable
         @ReadOnlyComposable
-        get() = if (androidx.compose.foundation.isSystemInDarkTheme()) LoggedInDark else LoggedInLight
+        get() = if (isSystemInDarkTheme()) LoggedInDark else LoggedInLight
+
+    val signal: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = if (isSystemInDarkTheme()) SignalDark else SignalLight
 }

@@ -13,11 +13,11 @@ import androidx.compose.ui.unit.dp
  * 视觉上同层级元素的留白不一致。此处收敛为单一取值，页面只准引用令牌。
  */
 object Dimen {
-    /** 页面水平外边距 */
-    val ScreenPadding = 20.dp
+    /** 页面水平外边距：16dp 让凭证卡更贴边，像从打印机里吐出来的一整张单据 */
+    val ScreenPadding = 16.dp
     /** 卡片内边距 */
     val CardPadding = 16.dp
-    /** 列表项等紧凑卡片的内边距（沿用历史 14dp，避免行高突变） */
+    /** 列表项等紧凑卡片的内边距 */
     val CardPaddingCompact = 14.dp
 
     /** 间隙梯度，全部取 4 的倍数 */
@@ -27,11 +27,13 @@ object Dimen {
     val SpaceL = 16.dp
     val SpaceXL = 24.dp
 
-    val RadiusSmall = 8.dp
-    /** 输入框 / 按钮 / 分段轨道（原 RoundedCornerShape(12.dp) 重复 6 次） */
-    val RadiusControl = 12.dp
-    val RadiusCard = 16.dp
-    val RadiusSheet = 24.dp
+    val RadiusSmall = 6.dp
+    /** 输入框 / 按钮：偏方正的标签感，避免圆润的社交 App 气质 */
+    val RadiusControl = 10.dp
+    val RadiusCard = 14.dp
+    val RadiusSheet = 20.dp
+    /** 状态印章：接近方章的 4dp 圆角 */
+    val RadiusStamp = 4.dp
 
     /**
      * Material 规范要求可点击元素触控区不低于 48dp。

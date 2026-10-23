@@ -1,7 +1,9 @@
 package com.aggapp.app.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,24 +19,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Fullscreen
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -47,9 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -57,7 +58,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.res.stringResource
 import com.aggapp.app.R
 import com.aggapp.app.ui.components.BARCODE_FULLSCREEN_HEIGHT
 import com.aggapp.app.ui.components.BARCODE_FULLSCREEN_WIDTH
@@ -66,17 +66,21 @@ import com.aggapp.app.ui.components.BARCODE_WIDTH
 import com.aggapp.app.ui.components.BarcodeState
 import com.aggapp.app.ui.components.EmptyState
 import com.aggapp.app.ui.components.LoadingState
+import com.aggapp.app.ui.components.PerforatedDivider
 import com.aggapp.app.ui.components.ScreenHeader
+import com.aggapp.app.ui.components.SignalButton
+import com.aggapp.app.ui.components.StatusStamp
+import com.aggapp.app.ui.components.StampTone
+import com.aggapp.app.ui.components.TicketCard
 import com.aggapp.app.ui.components.rememberBarcode
 import com.aggapp.app.ui.theme.AggColor
 import com.aggapp.app.ui.theme.AggType
 import com.aggapp.app.ui.theme.Brand
 import com.aggapp.app.ui.theme.Dimen
 import com.aggapp.app.ui.theme.ShapeControl
-import com.aggapp.app.ui.theme.ShapePill
 import com.aggapp.core.model.Platform
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IdCodeScreen(vm: MainViewModel) {
     val state by vm.state.collectAsState()
@@ -108,16 +112,16 @@ fun IdCodeScreen(vm: MainViewModel) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
-                // ===== 简洁头部（surface 底 + 主色点缀，与底部导航栏同风格）=====
                 ScreenHeader(
+                    eyebrow = stringResource(R.string.eyebrow_idcode),
                     title = stringResource(R.string.idcode_title),
                     actions = {
                         IconButton(onClick = { vm.refreshAll(force = true) }) {
                             if (state.loading) {
                                 CircularProgressIndicator(
-                                    Modifier.size(22.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 2.5.dp,
+                                    Modifier.size(20.dp),
+                                    color = AggColor.signal,
+                                    strokeWidth = 2.dp,
                                 )
                             } else {
                                 Icon(
@@ -128,61 +132,25 @@ fun IdCodeScreen(vm: MainViewModel) {
                             }
                         }
                     },
-                    // 分段控件与标题同属一块 surface：若挂到页头之外，会出现「白标题带 + 灰控件带」的底色断层
                     headerBottom = {
-                        Spacer(Modifier.height(Dimen.SpaceM))
-
-                        // ===== 平台切换：浅灰轨道分段控件（选中白底浮起）=====
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(ShapeControl)
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                .padding(Dimen.SpaceXS),
-                            horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceXS),
-                        ) {
-                            for (p in platforms) {
-                                val selected = p == state.selected
-                                Row(
-                                    Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(Dimen.RadiusSmall))
-                                        .background(
-                                            if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
-                                        )
-                                        .clickable { vm.select(p) }
-                                        .padding(vertical = Dimen.SpaceS),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        p.label,
-                                        style = AggType.SegmentedLabel,
-                                        maxLines = 1,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) {
-                                            MaterialTheme.colorScheme.onSurface
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                    )
-                                }
-                            }
-                        }
+                        PlatformTabs(
+                            platforms = platforms,
+                            selected = state.selected,
+                            onSelect = vm::select,
+                            modifier = Modifier.padding(top = Dimen.SpaceM),
+                        )
                     },
                 )
 
                 val code = state.codes[state.selected]
                 if (code == null) {
-                    Card(
+                    TicketCard(
                         Modifier
-                            .fillMaxWidth()
-                            .padding(Dimen.ScreenPadding),
-                        shape = MaterialTheme.shapes.large,
+                            .padding(horizontal = Dimen.ScreenPadding)
+                            .padding(top = Dimen.SpaceL),
                     ) {
                         Box(
-                            // 用 heightIn 而非固定 height：空态含图标与按钮，大字体下需要能撑高
-                            Modifier.fillMaxWidth().heightIn(min = 220.dp),
+                            Modifier.fillMaxWidth().heightIn(min = 240.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             // 首屏拉取未完成时先给加载态，否则会先闪一下「暂无身份码」再出现码图
@@ -199,148 +167,43 @@ fun IdCodeScreen(vm: MainViewModel) {
                     }
                 } else {
                     Column(Modifier.padding(Dimen.ScreenPadding)) {
-                        // ===== 身份码大卡 =====
-                        // 整卡及卡内全部配色锁定为浅色（AggColor.Barcode*），不参与深色反转：
-                        // 驿站扫码枪依赖白底黑条的最大对比度，深底浅条在部分老设备上直接读不出码。
-                        // 因此卡内的平台名、码号、徽章一律不能用 colorScheme，否则深色下会反向失真。
-                        Card(
-                            Modifier
-                                .fillMaxWidth()
-                                .pointerInput(code.content) {
-                                    detectTapGestures(
-                                        onTap = { vm.refreshAll(force = true) },
-                                        onDoubleTap = { fullscreen = true },
-                                    )
-                                },
-                            shape = MaterialTheme.shapes.large,
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                            colors = CardDefaults.cardColors(containerColor = AggColor.BarcodeCanvas),
-                        ) {
-                            Column(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = Dimen.SpaceXL, horizontal = Dimen.CardPadding),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                // 平台徽标行
-                                val accent = Brand.PlatformColor[state.selected] ?: Brand.Indigo
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        Modifier
-                                            .size(10.dp)
-                                            .background(accent, CircleShape),
-                                    )
-                                    Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
-                                    Text(
-                                        state.selected.label,
-                                        style = AggType.PlatformLabel,
-                                        color = AggColor.BarcodeInk,
-                                    )
-                                }
-                                Spacer(Modifier.height(Dimen.SpaceL))
+                        PickupPassCard(
+                            platform = state.selected,
+                            content = code.content,
+                            isReal = state.isReal[state.selected] != false,
+                            countdownSec = state.countdownSec,
+                            onTap = { vm.refreshAll(force = true) },
+                            onDoubleTap = { fullscreen = true },
+                        )
 
-                                when (val barcode = rememberBarcode(code.content).value) {
-                                    is BarcodeState.Ready -> Image(
-                                        bitmap = barcode.bitmap,
-                                        contentDescription = stringResource(R.string.cd_barcode),
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-
-                                    BarcodeState.Failed -> Box(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(120.dp)
-                                            .background(AggColor.BarcodePlaceholder, ShapeControl),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.idcode_render_failed),
-                                            color = AggColor.BarcodeBadgeFg,
-                                        )
-                                    }
-
-                                    // 异步渲染未完成时按出图比例占位，
-                                    // 保证码图出现时卡片高度不跳变
-                                    BarcodeState.Loading -> Box(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .aspectRatio(BARCODE_WIDTH.toFloat() / BARCODE_HEIGHT),
-                                    )
-                                }
-                                Spacer(Modifier.height(Dimen.SpaceL))
-                                // 码号文字单独显示（对齐 H5 原版 displayValue:false）
-                                Text(
-                                    code.content,
-                                    style = AggType.CodeNumber,
-                                    color = AggColor.BarcodeInk,
-                                )
-                                Spacer(Modifier.height(Dimen.SpaceM))
-                                Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
-                                    // 倒计时徽章
-                                    state.countdownSec?.let { sec ->
-                                        Box(
-                                            Modifier
-                                                .background(AggColor.BarcodeBadgeBg, ShapePill)
-                                                .padding(horizontal = Dimen.SpaceM, vertical = 5.dp),
-                                        ) {
-                                            Text(
-                                                stringResource(R.string.idcode_countdown, sec / 60, sec % 60),
-                                                style = AggType.Caption,
-                                                color = AggColor.BarcodeBadgeFg,
-                                            )
-                                        }
-                                    }
-                                    Box(
-                                        Modifier
-                                            .background(AggColor.BarcodeBadgeBg, ShapePill)
-                                            .padding(horizontal = Dimen.SpaceM, vertical = 5.dp),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.idcode_tap_hint),
-                                            style = AggType.Caption,
-                                            color = AggColor.BarcodeBadgeFg,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // 未登录提示
+                        // 未登录提示：单行警示条，而不是夹在卡片下方的一行小字
                         if (state.isReal[state.selected] == false) {
                             Spacer(Modifier.height(Dimen.SpaceM))
-                            Text(
-                                stringResource(R.string.idcode_not_logged_in),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                            )
+                            NoticeStrip(stringResource(R.string.idcode_not_logged_in))
                         }
 
                         Spacer(Modifier.height(Dimen.SpaceL))
 
-                        // ===== 快捷操作行 =====
                         Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceM)) {
-                            Button(
+                            SignalButton(
                                 onClick = { fullscreen = true },
                                 modifier = Modifier.weight(1f),
-                                shape = ShapeControl,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Brand.Indigo,
-                                ),
                             ) {
                                 Icon(
                                     Icons.Outlined.Fullscreen,
                                     stringResource(R.string.cd_fullscreen),
                                     Modifier.size(18.dp),
                                 )
-                                Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
+                                Spacer(Modifier.width(Dimen.SpaceS))
                                 Text(stringResource(R.string.idcode_action_fullscreen))
                             }
-                            Button(
+                            OutlinedButton(
                                 onClick = { showAllCodes = true },
                                 modifier = Modifier.weight(1f),
                                 shape = ShapeControl,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Brand.Violet,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
                                 ),
                             ) {
                                 Icon(
@@ -348,7 +211,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                                     stringResource(R.string.cd_all_platforms),
                                     Modifier.size(18.dp),
                                 )
-                                Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
+                                Spacer(Modifier.width(Dimen.SpaceS))
                                 Text(stringResource(R.string.idcode_action_all))
                             }
                         }
@@ -375,7 +238,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                 if (state.loading) {
                     CircularProgressIndicator(
                         Modifier.padding(Dimen.SpaceM),
-                        color = AggColor.OnBrightCode,
+                        color = AggColor.signal,
                     )
                 }
                 // 每个平台均分剩余高度（weight），条码 ContentScale.Fit 自适应，
@@ -390,7 +253,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                     ) {
                         Text(
                             p.label,
-                            style = AggType.PlatformLabel,
+                            style = AggType.FullscreenPlatformLabel,
                             color = AggColor.OnBrightCode,
                         )
                         if (code != null) {
@@ -454,7 +317,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                         Text(
                             state.selected.label,
                             style = AggType.FullscreenPlatformLabel,
-                            color = AggColor.OnBrightCode,
+                            color = AggColor.signal,
                         )
                         Spacer(Modifier.height(Dimen.SpaceL))
                         val barcode = rememberBarcode(
@@ -489,5 +352,230 @@ fun IdCodeScreen(vm: MainViewModel) {
                 }
             }
         }
+    }
+}
+
+/**
+ * 平台切换：单据分栏风格的下划线标签，替代旧版圆角分段胶囊。
+ *
+ * 五个中文平台名等分屏宽，选中态只靠「墨色加粗 + 信号色下划线」，
+ * 不用整块色底——避免与身份码卡片的视觉重量打架。
+ */
+@Composable
+private fun PlatformTabs(
+    platforms: List<Platform>,
+    selected: Platform,
+    onSelect: (Platform) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier.fillMaxWidth()) {
+        platforms.forEach { p ->
+            val isSelected = p == selected
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(ShapeControl)
+                    .selectable(
+                        selected = isSelected,
+                        role = Role.Tab,
+                        onClick = { onSelect(p) },
+                    )
+                    .padding(vertical = Dimen.SpaceS),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    p.label,
+                    style = AggType.SegmentedLabel,
+                    maxLines = 1,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+                Spacer(Modifier.height(Dimen.SpaceXS + 2.dp))
+                Box(
+                    Modifier
+                        .width(18.dp)
+                        .height(2.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) AggColor.signal else Color.Transparent),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 取件凭证卡：整张卡锁定浅色（白纸黑条），不参与深色反转。
+ *
+ * 结构自上而下：平台行 → 条码 → 码号 → 撕裂线 → 票根（提示 + 自动刷新倒计时）。
+ * 撕裂线两端用页面底色打出半圆缺口，是整套界面唯一的"形状记忆点"。
+ */
+@Composable
+private fun PickupPassCard(
+    platform: Platform,
+    content: String,
+    isReal: Boolean,
+    countdownSec: Long?,
+    onTap: () -> Unit,
+    onDoubleTap: () -> Unit,
+) {
+    val accent = Brand.PlatformColor[platform] ?: Color(0xFF4F5BD5)
+    TicketCard(
+        modifier = Modifier.pointerInput(content) {
+            detectTapGestures(onTap = { onTap() }, onDoubleTap = { onDoubleTap() })
+        },
+        containerColor = AggColor.BarcodeCanvas,
+        borderColor = Color(0xFFE2E1E8),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimen.CardPadding)
+                .padding(top = Dimen.CardPadding, bottom = 0.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(8.dp)
+                        .background(accent, CircleShape),
+                )
+                Spacer(Modifier.width(Dimen.SpaceS))
+                Text(
+                    platform.label,
+                    style = AggType.PlatformLabel,
+                    color = AggColor.BarcodeInk,
+                )
+                Spacer(Modifier.weight(1f))
+                if (isReal) {
+                    StatusStamp(
+                        text = stringResource(R.string.idcode_status_ready),
+                        tone = StampTone.Signal,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Dimen.SpaceM))
+
+            when (val barcode = rememberBarcode(content).value) {
+                is BarcodeState.Ready -> Image(
+                    bitmap = barcode.bitmap,
+                    contentDescription = stringResource(R.string.cd_barcode),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                BarcodeState.Failed -> Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(AggColor.BarcodePlaceholder, ShapeControl),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.idcode_render_failed),
+                        color = AggColor.BarcodeBadgeFg,
+                    )
+                }
+
+                // 异步渲染未完成时按出图比例占位，保证码图出现时卡片高度不跳变
+                BarcodeState.Loading -> Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(BARCODE_WIDTH.toFloat() / BARCODE_HEIGHT),
+                )
+            }
+
+            Spacer(Modifier.height(Dimen.SpaceS))
+            // 码号文字单独显示（对齐 H5 原版 displayValue:false）
+            Text(
+                content,
+                style = AggType.CodeNumber,
+                color = AggColor.BarcodeInk,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.idcode_tap_hint),
+                style = AggType.Caption,
+                color = AggColor.BarcodeBadgeFg,
+            )
+            Spacer(Modifier.height(Dimen.SpaceS))
+        }
+
+        PerforatedDivider(
+            notchColor = MaterialTheme.colorScheme.background,
+            lineColor = Color(0xFFD9D8DF),
+        )
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimen.CardPadding, vertical = Dimen.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.idcode_stub_title),
+                    style = AggType.Eyebrow,
+                    color = AggColor.BarcodeBadgeFg,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    stringResource(R.string.idcode_stub_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AggColor.BarcodeInk,
+                )
+            }
+            if (countdownSec != null) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        stringResource(
+                            R.string.idcode_countdown,
+                            countdownSec / 60,
+                            countdownSec % 60,
+                        ),
+                        style = AggType.MonoData,
+                        color = AggColor.BarcodeInk,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.idcode_stub_refresh),
+                        style = AggType.Caption,
+                        color = AggColor.BarcodeBadgeFg,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 警示条：左侧信号色竖条 + 说明文字，用于「未登录」等需要用户注意的单行信息 */
+@Composable
+private fun NoticeStrip(text: String) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(ShapeControl)
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f))
+            .padding(horizontal = Dimen.SpaceM, vertical = Dimen.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(
+            Modifier
+                .width(3.dp)
+                .height(14.dp)
+                .background(MaterialTheme.colorScheme.error),
+        )
+        Spacer(Modifier.width(Dimen.SpaceS))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }

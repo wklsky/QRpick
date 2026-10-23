@@ -17,20 +17,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,21 +45,25 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.aggapp.app.R
 import com.aggapp.app.ui.components.EmptyState
 import com.aggapp.app.ui.components.ErrorState
+import com.aggapp.app.ui.components.EyebrowRow
+import com.aggapp.app.ui.components.Hairline
 import com.aggapp.app.ui.components.LoadingState
 import com.aggapp.app.ui.components.ScreenHeader
+import com.aggapp.app.ui.components.SignalButton
+import com.aggapp.app.ui.components.StampTone
+import com.aggapp.app.ui.components.StatusStamp
+import com.aggapp.app.ui.components.TicketCard
 import com.aggapp.app.ui.theme.AggColor
 import com.aggapp.app.ui.theme.AggType
-import com.aggapp.app.ui.theme.Brand
 import com.aggapp.app.ui.theme.Dimen
 import com.aggapp.app.ui.theme.ShapeControl
-import com.aggapp.app.ui.theme.ShapePill
 import com.aggapp.core.model.ExpressStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * 快递页（第一期仅顺丰）：顶部渐变头部 + 运单号查询卡 + 驿站分组包裹列表
+ * 快递页：顶部单据抬头 + 运单查询卡 + 按驿站归拢的取件凭证列表
  */
 @Composable
 fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
@@ -80,17 +82,16 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
             .background(MaterialTheme.colorScheme.background)
             .clickable(interaction, indication = null) { viewModel.clearSearchResult() },
     ) {
-        // ===== 简洁头部（surface 底，与身份码页/底部导航同风格）=====
         ScreenHeader(
+            eyebrow = stringResource(R.string.eyebrow_express),
             title = stringResource(R.string.express_title),
             subtitle = stringResource(R.string.express_subtitle),
             actions = {
-                // 手动刷新
                 IconButton(onClick = viewModel::refresh, enabled = !ui.loading) {
                     if (ui.loading) {
                         CircularProgressIndicator(
                             Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = AggColor.signal,
                             strokeWidth = 2.dp,
                         )
                     } else {
@@ -113,14 +114,11 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
         ) {
             Spacer(Modifier.height(Dimen.SpaceL))
 
-            // ============ 运单号查询卡 ============
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
+            // ============ 运单号查询 ============
+            TicketCard {
                 Column(Modifier.padding(Dimen.CardPaddingCompact)) {
+                    EyebrowRow(stringResource(R.string.express_search_eyebrow))
+                    Spacer(Modifier.height(Dimen.SpaceM))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedTextField(
                             value = waybillInput,
@@ -129,18 +127,22 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
                             label = { Text(stringResource(R.string.express_label_waybill)) },
                             singleLine = true,
                             shape = ShapeControl,
+                            textStyle = AggType.TrackingNo,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                            ),
                         )
                         Spacer(Modifier.width(Dimen.SpaceS))
-                        Button(
+                        SignalButton(
                             onClick = { viewModel.lookupByTrackingNo(waybillInput) },
                             enabled = waybillInput.isNotBlank() && !ui.searching,
-                            shape = ShapeControl,
-                            colors = ButtonDefaults.buttonColors(containerColor = Brand.Indigo),
                         ) {
                             if (ui.searching) {
                                 CircularProgressIndicator(
-                                    Modifier.size(18.dp),
-                                    color = AggColor.OnBrand,
+                                    Modifier.size(16.dp),
+                                    color = AggColor.OnSignal,
                                     strokeWidth = 2.dp,
                                 )
                             } else {
@@ -150,7 +152,7 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
                                     Modifier.size(18.dp),
                                 )
                             }
-                            Spacer(Modifier.width(Dimen.SpaceXS))
+                            Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.express_action_search))
                         }
                     }
@@ -161,20 +163,26 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant, ShapeControl)
+                                .clip(ShapeControl)
+                                .background(AggColor.signal.copy(alpha = 0.16f))
                                 .clickable { copy(code.code) }
                                 .padding(Dimen.SpaceM),
                         ) {
                             Column {
                                 Text(
-                                    stringResource(R.string.express_pickup_code_with_id, code.expressId),
-                                    style = MaterialTheme.typography.labelMedium,
+                                    stringResource(R.string.express_code_label),
+                                    style = AggType.Eyebrow,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
                                     code.code,
                                     style = AggType.PickupCodeHero,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    stringResource(R.string.express_pickup_code_waybill, code.expressId),
+                                    style = AggType.MonoData,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -196,32 +204,38 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
 
             // 手机后4位验证（单号不在列表/详情无码时；可点关闭或空白处收回）
             ui.needSuffixFor?.let { no ->
-                Spacer(Modifier.height(10.dp))
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                ) {
+                Spacer(Modifier.height(Dimen.SpaceM))
+                TicketCard {
                     Column(
                         Modifier.padding(
                             start = Dimen.CardPaddingCompact,
-                            top = Dimen.SpaceXS,
+                            top = Dimen.SpaceS,
                             end = Dimen.SpaceXS,
                             bottom = Dimen.CardPaddingCompact,
                         ),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            // 标题是完整句子，不能套 Eyebrow 的宽字距小字号，只沿用信号色标
+                            Box(
+                                Modifier
+                                    .width(3.dp)
+                                    .height(14.dp)
+                                    .background(AggColor.signal),
+                            )
+                            Spacer(Modifier.width(Dimen.SpaceS))
                             Text(
                                 stringResource(R.string.express_suffix_title, no),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             IconButton(onClick = viewModel::dismissSuffix) {
                                 Icon(
                                     Icons.Filled.Close,
                                     stringResource(R.string.express_suffix_dismiss),
                                     Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -234,12 +248,17 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
                                 label = { Text(stringResource(R.string.express_suffix_label)) },
                                 singleLine = true,
                                 shape = ShapeControl,
+                                textStyle = AggType.MonoData,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                                ),
                             )
                             Spacer(Modifier.width(Dimen.SpaceS))
-                            Button(
+                            SignalButton(
                                 onClick = { viewModel.lookupWithSuffix(suffixInput) },
                                 enabled = suffixInput.length == 4 && !ui.searching,
-                                shape = ShapeControl,
                             ) { Text(stringResource(R.string.express_suffix_action)) }
                         }
                     }
@@ -250,43 +269,64 @@ fun ExpressScreen(viewModel: ExpressViewModel = hiltViewModel()) {
 
             // ============ 包裹列表（按驿站分组） ============
             // 三态统一走 StateViews：加载居中占位、错误必须给重试出口、空态必须带图标位
-            when {
-                ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    LoadingState()
-                }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when {
+                    ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        LoadingState()
+                    }
 
-                ui.error != null -> ErrorState(
-                    message = ui.error ?: stringResource(R.string.error_unknown),
-                    onRetry = viewModel::refresh,
-                )
+                    ui.error != null -> Column(
+                        Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        ErrorState(
+                            message = ui.error ?: stringResource(R.string.error_unknown),
+                            onRetry = viewModel::refresh,
+                        )
+                    }
 
-                ui.stations.isEmpty() -> EmptyState(stringResource(R.string.express_empty))
+                    ui.stations.isEmpty() -> Column(
+                        Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        EmptyState(stringResource(R.string.express_empty))
+                    }
 
-                else -> LazyColumn {
-                    ui.stations.forEach { group ->
-                        item(key = "header_${group.stationName}") {
-                            Row(
-                                Modifier.padding(top = Dimen.SpaceL, bottom = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    Icons.Filled.LocationOn,
-                                    stringResource(R.string.cd_station),
-                                    Modifier.size(18.dp),
-                                    tint = Brand.Indigo,
-                                )
-                                Spacer(Modifier.width(Dimen.SpaceXS))
-                                Text(
-                                    group.stationName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
+                    else -> LazyColumn(Modifier.fillMaxSize()) {
+                        ui.stations.forEach { group ->
+                            item(key = "header_${group.stationName}") {
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = Dimen.SpaceL, bottom = Dimen.SpaceS),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .width(3.dp)
+                                            .height(12.dp)
+                                            .background(AggColor.signal),
+                                    )
+                                    Spacer(Modifier.width(Dimen.SpaceS))
+                                    Text(
+                                        group.stationName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Spacer(Modifier.weight(1f))
+                                    Text(
+                                        stringResource(R.string.express_station_count, group.items.size),
+                                        style = AggType.MonoData,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            items(group.items, key = { "pkg_${it.id}" }) { item ->
+                                ExpressItemRow(item)
                             }
                         }
-                        items(group.items, key = { "pkg_${it.id}" }) { item ->
-                            ExpressItemRow(item)
-                        }
+                        item { Spacer(Modifier.height(Dimen.SpaceXL)) }
                     }
-                    item { Spacer(Modifier.height(Dimen.SpaceXL)) }
                 }
             }
         }
@@ -308,44 +348,38 @@ private fun rememberCopy(): (String) -> Unit {
 @Composable
 private fun ExpressItemRow(item: com.aggapp.core.model.ExpressItem) {
     val copy = rememberCopy()
-    Card(
-        Modifier.fillMaxWidth().padding(vertical = 5.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
+    TicketCard(Modifier.padding(vertical = 4.dp)) {
         Column(Modifier.padding(Dimen.CardPaddingCompact)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(
                     item.trackingNo.orEmpty(),
                     style = AggType.TrackingNo,
-                    modifier = Modifier.weight(1f, fill = false).clickable { copy(item.trackingNo.orEmpty()) },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clickable { copy(item.trackingNo.orEmpty()) },
                 )
-                Box(
-                    Modifier
-                        .background(
-                            if (item.status == ExpressStatus.WAIT_PICKUP) Brand.Indigo.copy(alpha = 0.12f)
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            ShapePill,
-                        )
-                        .padding(horizontal = Dimen.SpaceS + 2.dp, vertical = 3.dp),
-                ) {
-                    Text(
-                        when (item.status) {
-                            ExpressStatus.WAIT_PICKUP -> stringResource(R.string.express_status_wait_pickup)
-                            ExpressStatus.PICKED -> stringResource(R.string.express_status_picked)
-                            ExpressStatus.TIMEOUT -> stringResource(R.string.express_status_timeout)
-                            ExpressStatus.UNKNOWN -> stringResource(R.string.express_status_unknown)
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (item.status == ExpressStatus.WAIT_PICKUP) Brand.Indigo
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                StatusStamp(
+                    text = when (item.status) {
+                        ExpressStatus.WAIT_PICKUP -> stringResource(R.string.express_status_wait_pickup)
+                        ExpressStatus.PICKED -> stringResource(R.string.express_status_picked)
+                        ExpressStatus.TIMEOUT -> stringResource(R.string.express_status_timeout)
+                        ExpressStatus.UNKNOWN -> stringResource(R.string.express_status_unknown)
+                    },
+                    tone = when (item.status) {
+                        ExpressStatus.WAIT_PICKUP -> StampTone.Signal
+                        ExpressStatus.TIMEOUT -> StampTone.Alert
+                        else -> StampTone.Neutral
+                    },
+                )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Dimen.SpaceS))
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -357,14 +391,20 @@ private fun ExpressItemRow(item: com.aggapp.core.model.ExpressItem) {
                     } else "",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
                 )
                 item.pickupCode?.let { pickupCode ->
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
+                            stringResource(R.string.express_code_label),
+                            style = AggType.Eyebrow,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
                             pickupCode,
                             style = AggType.PickupCodeRow,
                             modifier = Modifier.clickable { copy(pickupCode) },
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         // 互补查询命中时标注取件码来源渠道（如「来自淘宝」）
                         val source = item.pickupCodeSource
@@ -386,14 +426,11 @@ private val timeFmt = SimpleDateFormat("MM-dd HH:mm", Locale.CHINA)
 private fun fmtTime(ms: Long): String = timeFmt.format(Date(ms))
 
 /** 如意邻里查件详情卡（orderDetailByWayBillNo，2026-09-29 实测）：状态 + 收寄件 + 轨迹时间线 */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
     var expanded by remember { mutableStateOf(false) }
-    Card(
-        Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-    ) {
+    TicketCard(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
         Column(Modifier.padding(Dimen.CardPaddingCompact)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -404,6 +441,7 @@ private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
                     d.mailNo,
                     style = AggType.TrackingNo,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     // 部分平台查询成功但不回状态名，用固定文案兜底而非显示空白
@@ -411,7 +449,7 @@ private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
                         stringResource(R.string.express_search_ok)
                     } else d.statusName,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (d.atStation) Brand.Indigo else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (d.atStation) AggColor.signal else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(Dimen.SpaceXS))
@@ -435,11 +473,11 @@ private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
                 Text(
                     stringResource(R.string.express_pickup_code, it),
                     style = AggType.PickupCodeDetail,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             Spacer(Modifier.height(Dimen.SpaceS))
-            HorizontalDivider()
+            Hairline()
             Spacer(Modifier.height(6.dp))
             val tracks = if (expanded) d.tracks else d.tracks.take(3)
             tracks.forEach { t ->
@@ -448,7 +486,7 @@ private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
                         Text(t.opName.orEmpty(), style = MaterialTheme.typography.labelMedium)
                         Text(
                             t.opTime.orEmpty(),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = AggType.MonoData,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -458,7 +496,7 @@ private fun RyllDetailCard(d: com.aggapp.platform.ryll.RyllOrderDetail) {
                 }
             }
             if (d.tracks.size > 3) {
-                androidx.compose.material3.TextButton(onClick = { expanded = !expanded }) {
+                TextButton(onClick = { expanded = !expanded }) {
                     Text(
                         if (expanded) stringResource(R.string.express_tracks_collapse)
                         else stringResource(R.string.express_tracks_expand, d.tracks.size),

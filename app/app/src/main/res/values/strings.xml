@@ -16,6 +16,11 @@
     <string name="error_unknown">未知错误</string>
     <string name="msg_copied">已复制：%1$s</string>
 
+    <!-- ============ 页头单据标签 ============ -->
+    <string name="eyebrow_idcode">取件凭证</string>
+    <string name="eyebrow_express">包裹动态</string>
+    <string name="eyebrow_mine">账户与登录</string>
+
     <!-- ============ 底部导航 ============ -->
     <string name="tab_idcode">身份码</string>
     <string name="tab_express">快递</string>
@@ -26,11 +31,15 @@
 
     <!-- ============ 身份码页 ============ -->
     <string name="idcode_title">身份码</string>
-    <string name="idcode_empty">暂无身份码\n单击条码区域或下拉刷新</string>
+    <string name="idcode_empty">暂无身份码\n下拉刷新，或到「我的」页登录平台</string>
     <string name="idcode_all_empty">暂无身份码（未登录或拉取失败）</string>
     <string name="idcode_tap_hint">单击刷新 · 双击全屏</string>
-    <string name="idcode_countdown">服务端对齐刷新 %1$d:%2$02d</string>
-    <string name="idcode_not_logged_in">⚠ 该平台未登录，请到「我的」页登录后查看身份码</string>
+    <string name="idcode_countdown">%1$d:%2$02d</string>
+    <string name="idcode_stub_title">取件凭证</string>
+    <string name="idcode_stub_hint">对准扫码枪出示此码</string>
+    <string name="idcode_stub_refresh">自动刷新</string>
+    <string name="idcode_status_ready">已就绪</string>
+    <string name="idcode_not_logged_in">该平台未登录，请到「我的」页登录后查看身份码</string>
     <string name="idcode_action_fullscreen">全屏亮码</string>
     <string name="idcode_action_all">全部平台码</string>
     <string name="idcode_exit_fullscreen">单击屏幕退出全屏</string>
@@ -44,10 +53,13 @@
 
     <!-- ============ 快递页 ============ -->
     <string name="express_title">快递</string>
-    <string name="express_subtitle">包裹动态与取件码查询</string>
+    <string name="express_subtitle">按驿站归拢，取件码一眼可见</string>
     <string name="express_label_waybill">运单号</string>
     <string name="express_action_search">查询</string>
-    <string name="express_pickup_code_with_id">取件码（%1$s）· 点击复制</string>
+    <string name="express_search_eyebrow">查运单</string>
+    <string name="express_code_label">取件码</string>
+    <string name="express_pickup_code_waybill">运单 %1$s · 点击复制</string>
+    <string name="express_station_count">%1$d 件</string>
     <string name="express_empty">暂无待取件包裹</string>
     <string name="express_suffix_title">验证收件手机后 4 位查询 %1$s</string>
     <string name="express_suffix_dismiss">收回</string>
@@ -72,6 +84,8 @@
     <!-- ============ 我的页 ============ -->
     <string name="mine_title">我的</string>
     <string name="mine_subtitle">平台登录与账号管理</string>
+    <string name="mine_section_accounts">平台账户</string>
+    <string name="mine_section_login">登录方式</string>
     <string name="mine_login_state_unchecked">未检查</string>
     <string name="mine_login_state_logged_in">已登录</string>
     <string name="mine_login_state_need_relogin">需重登</string>
@@ -104,13 +118,6 @@
     <string name="mine_form_ryll_fetch_captcha">获取图形码</string>
     <string name="mine_form_ryll_send_sms">发送短信验证码</string>
     <string name="cd_ryll_captcha">图形验证码，点击换一张</string>
-
-    <string name="mine_contact_author">联系作者</string>
-    <string name="mine_sponsor">赞助作者</string>
-    <string name="mine_contact_qr_tip">扫码加入交流群</string>
-    <string name="mine_sponsor_tip">感谢每一份支持</string>
-    <string name="cd_contact_qr">联系作者二维码</string>
-    <string name="cd_sponsor_qr">赞助码</string>
 
     <string name="mine_export_log">导出调试日志（操作/请求/登录态）</string>
 

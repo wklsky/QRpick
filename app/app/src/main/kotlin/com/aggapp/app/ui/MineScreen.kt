@@ -3,6 +3,7 @@ package com.aggapp.app.ui
 import android.widget.Toast
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,19 +17,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import com.aggapp.app.R
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,19 +39,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aggapp.app.R
+import com.aggapp.app.ui.components.EyebrowRow
 import com.aggapp.app.ui.components.ScreenHeader
+import com.aggapp.app.ui.components.SignalButton
+import com.aggapp.app.ui.components.TicketCard
 import com.aggapp.app.ui.theme.AggColor
-import com.aggapp.app.ui.theme.AggType
+import com.aggapp.app.ui.theme.Brand
 import com.aggapp.app.ui.theme.Dimen
 import com.aggapp.app.ui.theme.ShapeControl
+import com.aggapp.app.ui.theme.ShapePill
 import com.aggapp.core.model.Platform
 
 /**
@@ -63,12 +68,6 @@ import com.aggapp.core.model.Platform
  * - 登录表单区：手机号+验证码协议登录为主，兜底粘贴入口折叠；
  * - 平台登录态总览卡片（各平台协议直连登录/兜底粘贴）。
  */
-/**
- * 五张平台登录态卡片并排展示，圆角必须完全一致否则视觉参差。
- * 提到文件级常量而非写在 Composable 内：后者会在每次重组时重建 RoundedCornerShape。
- */
-private val PlatformCardShape = RoundedCornerShape(Dimen.RadiusControl)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MineScreen(vm: MineViewModel = hiltViewModel()) {
@@ -101,6 +100,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
         ) {
             // ===== 简洁头部（surface 底，与身份码页/底部导航同风格）=====
             ScreenHeader(
+                eyebrow = stringResource(R.string.eyebrow_mine),
                 title = stringResource(R.string.mine_title),
                 subtitle = stringResource(R.string.mine_subtitle),
             )
@@ -108,57 +108,54 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 Modifier.padding(horizontal = Dimen.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-            // ===== 顶部：5 平台登录态总览（点击展开对应登录表单）=====
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
-                Platform.entries.forEach { p ->
-                    val ls = state.loginStates[p]
-                    val selected = expanded == p
-                    val accent = com.aggapp.app.ui.theme.Brand.PlatformColor[p]
-                        ?: MaterialTheme.colorScheme.primary
-                    Card(
-                        onClick = { expanded = p },
-                        modifier = Modifier
-                            .weight(1f)
-                            .then(
-                                if (ls?.loggedIn == true) {
-                                    // 已登录：绿色描边 + 绿色光晕
-                                    Modifier
-                                        .shadow(
-                                            6.dp, PlatformCardShape, clip = false,
-                                            ambientColor = AggColor.loggedIn,
-                                            spotColor = AggColor.loggedIn,
-                                        )
-                                } else Modifier
-                            ),
-                        shape = PlatformCardShape,
-                        colors = CardDefaults.cardColors(
-                            containerColor = when {
-                                selected -> MaterialTheme.colorScheme.primaryContainer
-                                ls?.loggedIn == true -> MaterialTheme.colorScheme.surface
-                                ls?.needRelogin == true -> MaterialTheme.colorScheme.errorContainer
-                                else -> MaterialTheme.colorScheme.surface
-                            },
-                        ),
-                        border = when {
-                            ls?.loggedIn == true ->
-                                androidx.compose.foundation.BorderStroke(1.5.dp, AggColor.loggedIn)
-                            else -> null
-                        },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
+            // ===== 顶部：5 平台登录态总览（单据分栏，点击展开对应登录表单）=====
+            EyebrowRow(stringResource(R.string.mine_section_accounts))
+            TicketCard {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Platform.entries.forEachIndexed { index, p ->
+                        val ls = state.loginStates[p]
+                        val selected = expanded == p
+                        val accent = Brand.PlatformColor[p] ?: MaterialTheme.colorScheme.onSurface
                         Column(
-                            Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                            Modifier
+                                .weight(1f)
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
+                                )
+                                .selectable(
+                                    selected = selected,
+                                    role = Role.Tab,
+                                    onClick = { expanded = p },
+                                )
+                                .padding(vertical = 10.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            // 平台品牌色圆点
+                            // 选中标记：与底部导航同一套信号色短横
                             Box(
                                 Modifier
-                                    .width(8.dp)
-                                    .height(8.dp)
-                                    .background(accent, androidx.compose.foundation.shape.CircleShape),
+                                    .width(14.dp)
+                                    .height(3.dp)
+                                    .clip(ShapePill)
+                                    .background(if (selected) AggColor.signal else Color.Transparent),
                             )
-                            Spacer(Modifier.height(4.dp))
-                            Text(p.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(Modifier.height(7.dp))
+                            Box(
+                                Modifier
+                                    .size(6.dp)
+                                    .background(accent, CircleShape),
+                            )
+                            Spacer(Modifier.height(5.dp))
+                            Text(
+                                p.label,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 when {
@@ -167,12 +164,20 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     ls.needRelogin -> stringResource(R.string.mine_login_state_need_relogin)
                                     else -> stringResource(R.string.mine_login_state_logged_out)
                                 },
-                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
                                 color = when {
-                                    ls?.loggedIn == true -> MaterialTheme.colorScheme.primary
+                                    ls?.loggedIn == true -> AggColor.loggedIn
                                     ls?.needRelogin == true -> MaterialTheme.colorScheme.error
                                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 },
+                            )
+                        }
+                        if (index < Platform.entries.lastIndex) {
+                            Spacer(
+                                Modifier
+                                    .width(1.dp)
+                                    .height(54.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant),
                             )
                         }
                     }
@@ -181,12 +186,15 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
             OutlinedButton(
                 onClick = { vm.refreshLoginStates() },
                 modifier = Modifier.fillMaxWidth(),
+                shape = ShapeControl,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) { Text(stringResource(R.string.mine_recheck_all)) }
 
             // ===== 展开的平台登录表单 =====
+            EyebrowRow(stringResource(R.string.mine_section_login))
             when (expanded) {
                 Platform.TAOBAO -> {
-                    Card(Modifier.fillMaxWidth()) {
+                    TicketCard {
                         Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
                                 stringResource(R.string.mine_form_taobao_title),
@@ -214,13 +222,15 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                 )
-                                Button(
+                                OutlinedButton(
                                     onClick = { vm.sendTaobaoSms(phone) },
                                     enabled = !state.busy,
+                                    shape = ShapeControl,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                                 ) { Text(stringResource(R.string.action_send_code)) }
                             }
                             Spacer(Modifier.height(Dimen.SpaceS))
-                            Button(
+                            SignalButton(
                                 onClick = { vm.loginTaobao(smsCode) },
                                 enabled = !state.busy && state.smsSent && smsCode.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
@@ -231,7 +241,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 }
 
                 Platform.JD -> {
-                    Card(Modifier.fillMaxWidth()) {
+                    TicketCard {
                         Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
                                 stringResource(R.string.mine_form_jd_title),
@@ -251,10 +261,12 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                 singleLine = true,
                             )
                             Spacer(Modifier.height(Dimen.SpaceS))
-                            Button(
+                            OutlinedButton(
                                 onClick = { vm.jdPrepareSms(phone) },
                                 enabled = !state.busy && phone.length == 11,
                                 modifier = Modifier.fillMaxWidth(),
+                                shape = ShapeControl,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             ) { Text(stringResource(R.string.action_send_code)) }
                             if (state.jdSmsSent) {
                                 Spacer(Modifier.height(Dimen.SpaceS))
@@ -266,7 +278,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     singleLine = true,
                                 )
                                 Spacer(Modifier.height(Dimen.SpaceS))
-                                Button(
+                                SignalButton(
                                     onClick = { vm.jdVerifySms(smsCode) },
                                     enabled = !state.busy && smsCode.isNotBlank(),
                                     modifier = Modifier.fillMaxWidth(),
@@ -308,7 +320,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                     )
-                                    Button(
+                                    SignalButton(
                                         onClick = { vm.loginJd(jdPtKey, jdPin) },
                                         enabled = !state.busy,
                                     ) { Text(stringResource(R.string.action_save)) }
@@ -320,7 +332,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 }
 
                 Platform.SF -> {
-                    Card(Modifier.fillMaxWidth()) {
+                    TicketCard {
                         Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
                                 stringResource(R.string.mine_form_sf_title),
@@ -348,13 +360,15 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                 )
-                                Button(
+                                OutlinedButton(
                                     onClick = { vm.sfStartCaptcha(phone) },
                                     enabled = !state.busy,
+                                    shape = ShapeControl,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                                 ) { Text(stringResource(R.string.action_send_code)) }
                             }
                             Spacer(Modifier.height(Dimen.SpaceS))
-                            Button(
+                            SignalButton(
                                 onClick = { vm.loginSfSms(smsCode) },
                                 enabled = !state.busy && state.sfSmsSent && smsCode.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
@@ -375,7 +389,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 Spacer(Modifier.height(Dimen.SpaceS))
-                                Button(
+                                SignalButton(
                                     onClick = { vm.loginSf(sfToken) },
                                     enabled = !state.busy,
                                     modifier = Modifier.fillMaxWidth(),
@@ -401,7 +415,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 }
 
                 Platform.PDD -> {
-                    Card(Modifier.fillMaxWidth()) {
+                    TicketCard {
                         Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
                                 stringResource(R.string.mine_form_pdd_title),
@@ -413,7 +427,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(Dimen.SpaceS))
-                            Button(
+                            SignalButton(
                                 onClick = { vm.startPddQrLogin() },
                                 enabled = !state.busy,
                                 modifier = Modifier.fillMaxWidth(),
@@ -425,7 +439,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
 
                 Platform.RYLL -> {
                     var ryllCaptcha by remember { mutableStateOf("") }
-                    Card(Modifier.fillMaxWidth()) {
+                    TicketCard {
                         Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
                                 stringResource(R.string.mine_form_ryll_title),
@@ -480,10 +494,12 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                 )
                             }
                             Spacer(Modifier.height(Dimen.SpaceS))
-                            Button(
+                            OutlinedButton(
                                 onClick = { vm.ryllSendSms(phone, ryllCaptcha) },
                                 enabled = !state.busy && phone.length == 11 && ryllCaptcha.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
+                                shape = ShapeControl,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             ) { Text(stringResource(R.string.mine_form_ryll_send_sms)) }
                             if (state.ryllSmsSent) {
                                 Spacer(Modifier.height(Dimen.SpaceS))
@@ -495,7 +511,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     singleLine = true,
                                 )
                                 Spacer(Modifier.height(Dimen.SpaceS))
-                                Button(
+                                SignalButton(
                                     onClick = { vm.ryllLogin(smsCode) },
                                     enabled = !state.busy && smsCode.isNotBlank(),
                                     modifier = Modifier.fillMaxWidth(),
@@ -507,97 +523,13 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 }
             }
 
-            // ===== 联系/赞助作者 =====
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                var showWx by remember { mutableStateOf(false) }
-                var showSkm by remember { mutableStateOf(false) }
-                OutlinedButton(
-                    onClick = { showWx = true },
-                    modifier = Modifier.weight(1f),
-                    shape = ShapeControl,
-                ) { Text(stringResource(R.string.mine_contact_author)) }
-                Button(
-                    onClick = { showSkm = true },
-                    modifier = Modifier.weight(1f),
-                    shape = ShapeControl,
-                    colors = ButtonDefaults.buttonColors(containerColor = com.aggapp.app.ui.theme.Brand.Amber),
-                ) { Text(stringResource(R.string.mine_sponsor)) }
-
-                // 居中弹窗：微信二维码
-                if (showWx) {
-                    androidx.compose.material3.AlertDialog(
-                        onDismissRequest = { showWx = false },
-                        confirmButton = {
-                            TextButton(onClick = { showWx = false }) { Text(stringResource(R.string.action_close)) }
-                        },
-                        title = {
-                            Text(
-                                stringResource(R.string.mine_contact_author),
-                                Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            )
-                        },
-                        text = {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Image(
-                                    painterResource(R.drawable.wx_qr),
-                                    // 原描述写的是「QQ群二维码」，与弹窗标题「联系作者」不符，
-                                    // 这里按弹窗语义统一，避免 TalkBack 播报与界面文案矛盾
-                                    contentDescription = stringResource(R.string.cd_contact_qr),
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(Modifier.height(Dimen.SpaceS))
-                                Text(
-                                    stringResource(R.string.mine_contact_qr_tip),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                    )
-                }
-                // 居中弹窗：赞助码
-                if (showSkm) {
-                    androidx.compose.material3.AlertDialog(
-                        onDismissRequest = { showSkm = false },
-                        confirmButton = {
-                            TextButton(onClick = { showSkm = false }) { Text(stringResource(R.string.action_close)) }
-                        },
-                        title = {
-                            Text(
-                                stringResource(R.string.mine_sponsor),
-                                Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            )
-                        },
-                        text = {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Image(
-                                    painterResource(R.drawable.skm_qr),
-                                    contentDescription = stringResource(R.string.cd_sponsor_qr),
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(Modifier.height(Dimen.SpaceS))
-                                Text(
-                                    stringResource(R.string.mine_sponsor_tip),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                    )
-                }
-            }
-
             // ===== 调试日志导出（debug 包：操作日志 + 请求日志 + 登录态） =====
             OutlinedButton(
                 onClick = { vm.exportDebugLog() },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
                 shape = ShapeControl,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) { Text(stringResource(R.string.mine_export_log)) }
 
             // 淘宝多账号选择弹窗（手机号绑定多个淘宝账号，登录前需选择）
