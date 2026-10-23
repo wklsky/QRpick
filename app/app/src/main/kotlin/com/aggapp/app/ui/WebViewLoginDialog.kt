@@ -22,8 +22,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aggapp.app.R
 import com.aggapp.core.model.Credential
 import com.aggapp.platform.api.AppLog
 import kotlinx.coroutines.CoroutineScope
@@ -171,6 +173,8 @@ fun WebViewLoginDialog(
     checkSuccess: (cookies: Map<String, String>) -> Credential?,
     onCredential: (Credential) -> Unit,
     onDismiss: () -> Unit,
+    // 默认参数表达式不处于组合作用域，无法调用 stringResource，
+    // 故此处保留字面量；调用方传入的自定义 tip 一律走 strings.xml
     tip: String? = "在页面中完成手机号验证码登录，成功后自动记录登录态",
     desktopUa: Boolean = false,
     clearCookies: Boolean = false,
@@ -211,8 +215,8 @@ fun WebViewLoginDialog(
                         } catch (e: Exception) {
                             AppLog.e("AggApp", "open verify page in external browser failed", e)
                         }
-                    }) { Text("系统浏览器打开") }
-                    TextButton(onClick = onDismiss) { Text("关闭") }
+                    }) { Text(stringResource(R.string.action_open_in_browser)) }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                 }
             }
             // 题干外置（tip 为 null 的验证场景）：固定前缀小字 + 题目主体大字（截到「（单选/多选）」为止，选项列表不重复显示）
@@ -222,7 +226,7 @@ fun WebViewLoginDialog(
                     .trim()
                 val question = Regex("请选择您.*?[（(][单多]选[）)]").find(body)?.value ?: body
                 Text(
-                    "为了您的资金安全，请进行安全验证",
+                    stringResource(R.string.dialog_webview_security_prefix),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -240,7 +244,7 @@ fun WebViewLoginDialog(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("选好了但页面没有确认按钮？点此外置确认") }
+            ) { Text(stringResource(R.string.dialog_webview_manual_confirm)) }
             // 手动收尾：验证在页面（或系统浏览器）里过完后，服务端已把该 vat 标记通过，
             // 但 WebView 未必收到收尾 Set-Cookie；由 App 端按同参补发 auth/ticket 落库
             if (actionLabel != null && onAction != null) {

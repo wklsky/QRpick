@@ -20,8 +20,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aggapp.app.R
 
 /**
  * 京东滑块/点选验证码弹窗（jd.md §2.2.6②⑤）：
@@ -63,11 +65,14 @@ fun JdCaptchaDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("安全验证", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = onDismiss) { Text("关闭") }
+                    Text(
+                        stringResource(R.string.dialog_security_verify),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                 }
                 Text(
-                    "完成验证后将自动向该手机号发送短信验证码",
+                    stringResource(R.string.dialog_captcha_auto_sms),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 CaptchaWebView(captchaUrl, onCaptcha)

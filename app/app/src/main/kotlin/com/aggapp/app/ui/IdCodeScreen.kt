@@ -1,6 +1,5 @@
 package com.aggapp.app.ui
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Fullscreen
-import androidx.compose.material3.AssistChip
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Button
@@ -51,44 +47,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import com.aggapp.app.R
+import com.aggapp.app.ui.components.BARCODE_FULLSCREEN_HEIGHT
+import com.aggapp.app.ui.components.BARCODE_FULLSCREEN_WIDTH
+import com.aggapp.app.ui.components.BARCODE_HEIGHT
+import com.aggapp.app.ui.components.BARCODE_WIDTH
+import com.aggapp.app.ui.components.BarcodeState
+import com.aggapp.app.ui.components.rememberBarcode
+import com.aggapp.app.ui.theme.AggColor
+import com.aggapp.app.ui.theme.AggType
 import com.aggapp.app.ui.theme.Brand
+import com.aggapp.app.ui.theme.Dimen
+import com.aggapp.app.ui.theme.ShapeControl
+import com.aggapp.app.ui.theme.ShapePill
 import com.aggapp.core.model.Platform
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.oned.Code128Writer
-import com.google.zxing.common.BitMatrix
-
-/** CODE128 条形码渲染（对齐 sf.md §4.2：H5 原版 JsBarcode，displayValue:false，码号文字单独显示） */
-fun renderCode128(content: String, width: Int = 1000, height: Int = 300): Bitmap? {
-    return try {
-        val hints = mapOf(EncodeHintType.MARGIN to 10)
-        val matrix: BitMatrix = Code128Writer().encode(content, BarcodeFormat.CODE_128, width, height, hints)
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-        for (x in 0 until width) {
-            for (y in 0 until height) {
-                bmp.setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-            }
-        }
-        bmp
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -128,7 +112,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
                         .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = Dimen.ScreenPadding, vertical = Dimen.SpaceM),
                 ) {
                     Row(
                         Modifier.fillMaxWidth(),
@@ -136,10 +120,9 @@ fun IdCodeScreen(vm: MainViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "身份码",
+                            stringResource(R.string.idcode_title),
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = AggType.ScreenTitle,
                         )
                         IconButton(onClick = { vm.refreshAll(force = true) }) {
                             if (state.loading) {
@@ -150,7 +133,8 @@ fun IdCodeScreen(vm: MainViewModel) {
                                 )
                             } else {
                                 Icon(
-                                    Icons.Filled.Refresh, "刷新",
+                                    Icons.Filled.Refresh,
+                                    stringResource(R.string.action_refresh),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -159,33 +143,32 @@ fun IdCodeScreen(vm: MainViewModel) {
 
                     Spacer(Modifier.height(12.dp))
 
-                    // ===== 平台切换：浅灰轨道分段控件（选中白底浮起 + 平台色字/点）=====
+                    // ===== 平台切换：浅灰轨道分段控件（选中白底浮起）=====
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(ShapeControl)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                            .padding(3.dp),
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            .padding(Dimen.SpaceXS),
+                        horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceXS),
                     ) {
                         for (p in platforms) {
                             val selected = p == state.selected
-                            val accent = Brand.PlatformColor[p] ?: MaterialTheme.colorScheme.primary
                             Row(
                                 Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(9.dp))
+                                    .clip(RoundedCornerShape(Dimen.RadiusSmall))
                                     .background(
                                         if (selected) MaterialTheme.colorScheme.surface else Color.Transparent
                                     )
                                     .clickable { vm.select(p) }
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = Dimen.SpaceS),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     p.label,
-                                    fontSize = 13.sp,
+                                    style = AggType.SegmentedLabel,
                                     maxLines = 1,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (selected) {
@@ -204,7 +187,7 @@ fun IdCodeScreen(vm: MainViewModel) {
                     Card(
                         Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(Dimen.ScreenPadding),
                         shape = MaterialTheme.shapes.large,
                     ) {
                         Box(
@@ -212,15 +195,18 @@ fun IdCodeScreen(vm: MainViewModel) {
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                "暂无身份码\n单击条码区域或下拉刷新",
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                stringResource(R.string.idcode_empty),
+                                textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 } else {
-                    Column(Modifier.padding(20.dp)) {
+                    Column(Modifier.padding(Dimen.ScreenPadding)) {
                         // ===== 身份码大卡 =====
+                        // 整卡及卡内全部配色锁定为浅色（AggColor.Barcode*），不参与深色反转：
+                        // 驿站扫码枪依赖白底黑条的最大对比度，深底浅条在部分老设备上直接读不出码。
+                        // 因此卡内的平台名、码号、徽章一律不能用 colorScheme，否则深色下会反向失真。
                         Card(
                             Modifier
                                 .fillMaxWidth()
@@ -232,12 +218,12 @@ fun IdCodeScreen(vm: MainViewModel) {
                                 },
                             shape = MaterialTheme.shapes.large,
                             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            colors = CardDefaults.cardColors(containerColor = AggColor.BarcodeCanvas),
                         ) {
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                                    .padding(vertical = Dimen.SpaceXL, horizontal = Dimen.CardPadding),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 // 平台徽标行
@@ -248,67 +234,75 @@ fun IdCodeScreen(vm: MainViewModel) {
                                             .size(10.dp)
                                             .background(accent, CircleShape),
                                     )
-                                    Spacer(Modifier.width(6.dp))
+                                    Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
                                     Text(
                                         state.selected.label,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1A1B23),
+                                        style = AggType.PlatformLabel,
+                                        color = AggColor.BarcodeInk,
                                     )
                                 }
-                                Spacer(Modifier.height(16.dp))
+                                Spacer(Modifier.height(Dimen.SpaceL))
 
-                                val bmp = renderCode128(code.content)
-                                if (bmp != null) {
-                                    Image(
-                                        bitmap = bmp.asImageBitmap(),
-                                        contentDescription = "身份码条形码",
+                                when (val barcode = rememberBarcode(code.content).value) {
+                                    is BarcodeState.Ready -> Image(
+                                        bitmap = barcode.bitmap,
+                                        contentDescription = stringResource(R.string.cd_barcode),
                                         modifier = Modifier.fillMaxWidth(),
                                     )
-                                } else {
-                                    Box(
+
+                                    BarcodeState.Failed -> Box(
                                         Modifier
                                             .fillMaxWidth()
                                             .height(120.dp)
-                                            .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                                            .background(AggColor.BarcodePlaceholder, ShapeControl),
                                         contentAlignment = Alignment.Center,
-                                    ) { Text("条码渲染失败") }
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.idcode_render_failed),
+                                            color = AggColor.BarcodeBadgeFg,
+                                        )
+                                    }
+
+                                    // 异步渲染未完成时按出图比例占位，
+                                    // 保证码图出现时卡片高度不跳变
+                                    BarcodeState.Loading -> Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(BARCODE_WIDTH.toFloat() / BARCODE_HEIGHT),
+                                    )
                                 }
-                                Spacer(Modifier.height(16.dp))
+                                Spacer(Modifier.height(Dimen.SpaceL))
                                 // 码号文字单独显示（对齐 H5 原版 displayValue:false）
                                 Text(
                                     code.content,
-                                    fontSize = 20.sp,
-                                    letterSpacing = 3.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1A1B23),
+                                    style = AggType.CodeNumber,
+                                    color = AggColor.BarcodeInk,
                                 )
-                                Spacer(Modifier.height(12.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Spacer(Modifier.height(Dimen.SpaceM))
+                                Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
                                     // 倒计时徽章
-                                    state.countdownSec?.let {
+                                    state.countdownSec?.let { sec ->
                                         Box(
                                             Modifier
-                                                .background(Color(0xFFF1F0F8), RoundedCornerShape(50))
-                                                .padding(horizontal = 12.dp, vertical = 5.dp),
+                                                .background(AggColor.BarcodeBadgeBg, ShapePill)
+                                                .padding(horizontal = Dimen.SpaceM, vertical = 5.dp),
                                         ) {
                                             Text(
-                                                "服务端对齐刷新 ${it / 60}:${(it % 60).toString().padStart(2, '0')}",
-                                                fontSize = 12.sp,
-                                                color = Color(0xFF46464F),
+                                                stringResource(R.string.idcode_countdown, sec / 60, sec % 60),
+                                                style = AggType.Caption,
+                                                color = AggColor.BarcodeBadgeFg,
                                             )
                                         }
                                     }
                                     Box(
                                         Modifier
-                                            .background(Color(0xFFF1F0F8), RoundedCornerShape(50))
-                                            .padding(horizontal = 12.dp, vertical = 5.dp),
+                                            .background(AggColor.BarcodeBadgeBg, ShapePill)
+                                            .padding(horizontal = Dimen.SpaceM, vertical = 5.dp),
                                     ) {
                                         Text(
-                                            "单击刷新 · 双击全屏",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF46464F),
+                                            stringResource(R.string.idcode_tap_hint),
+                                            style = AggType.Caption,
+                                            color = AggColor.BarcodeBadgeFg,
                                         )
                                     }
                                 }
@@ -317,41 +311,49 @@ fun IdCodeScreen(vm: MainViewModel) {
 
                         // 未登录提示
                         if (state.isReal[state.selected] == false) {
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(Dimen.SpaceM))
                             Text(
-                                "⚠ 该平台未登录，请到「我的」页登录后查看身份码",
+                                stringResource(R.string.idcode_not_logged_in),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                             )
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(Dimen.SpaceL))
 
                         // ===== 快捷操作行 =====
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceM)) {
                             Button(
                                 onClick = { fullscreen = true },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = ShapeControl,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Brand.Indigo,
                                 ),
                             ) {
-                                Icon(Icons.Outlined.Fullscreen, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("全屏亮码")
+                                Icon(
+                                    Icons.Outlined.Fullscreen,
+                                    stringResource(R.string.cd_fullscreen),
+                                    Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
+                                Text(stringResource(R.string.idcode_action_fullscreen))
                             }
                             Button(
                                 onClick = { showAllCodes = true },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = ShapeControl,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Brand.Violet,
                                 ),
                             ) {
-                                Icon(Icons.Filled.GridView, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("全部平台码")
+                                Icon(
+                                    Icons.Filled.GridView,
+                                    stringResource(R.string.cd_all_platforms),
+                                    Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(Dimen.SpaceXS + 2.dp))
+                                Text(stringResource(R.string.idcode_action_all))
                             }
                         }
                     }
@@ -369,13 +371,16 @@ fun IdCodeScreen(vm: MainViewModel) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black)
+                    .background(AggColor.BrightCodeBackdrop)
                     .pointerInput(Unit) { detectTapGestures(onTap = { showAllCodes = false }) }
-                    .padding(vertical = 24.dp),
+                    .padding(vertical = Dimen.SpaceXL),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (state.loading) {
-                    CircularProgressIndicator(Modifier.padding(12.dp), color = Color.White)
+                    CircularProgressIndicator(
+                        Modifier.padding(Dimen.SpaceM),
+                        color = AggColor.OnBrightCode,
+                    )
                 }
                 // 每个平台均分剩余高度（weight），条码 ContentScale.Fit 自适应，
                 // 免 verticalScroll——任何屏幕都无需上下滑动即可看到全部五码
@@ -389,42 +394,47 @@ fun IdCodeScreen(vm: MainViewModel) {
                     ) {
                         Text(
                             p.label,
-                            fontSize = 15.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
+                            style = AggType.PlatformLabel,
+                            color = AggColor.OnBrightCode,
                         )
                         if (code != null) {
-                            renderCode128(code.content)?.let {
+                            val barcode = rememberBarcode(code.content).value
+                            if (barcode is BarcodeState.Ready) {
                                 Image(
-                                    bitmap = it.asImageBitmap(),
-                                    contentDescription = "${p.label}身份码条形码",
+                                    bitmap = barcode.bitmap,
+                                    contentDescription = stringResource(R.string.cd_barcode_of, p.label),
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier
                                         .weight(1f)
                                         .fillMaxWidth()
-                                        .padding(horizontal = 24.dp),
+                                        .padding(horizontal = Dimen.SpaceXL),
                                 )
+                            } else {
+                                // 占住 weight 分配的剩余高度，避免五个平台码图陆续加载时整体重排
+                                Spacer(Modifier.weight(1f))
                             }
                             Text(
                                 code.content,
-                                fontSize = 13.sp,
-                                letterSpacing = 2.sp,
-                                color = Color.White,
-                                fontFamily = FontFamily.Monospace,
+                                style = AggType.CodeNumberCompact,
+                                color = AggColor.OnBrightCode,
                                 maxLines = 1,
                             )
                         } else {
                             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                                 Text(
-                                    "暂无身份码（未登录或拉取失败）",
-                                    fontSize = 13.sp,
-                                    color = Color.Gray,
+                                    stringResource(R.string.idcode_all_empty),
+                                    style = AggType.Caption,
+                                    color = AggColor.OnBrightCodeMuted,
                                 )
                             }
                         }
                     }
                 }
-                Text("单击屏幕退出", fontSize = 13.sp, color = Color.Gray)
+                Text(
+                    stringResource(R.string.idcode_exit_all),
+                    style = AggType.Caption,
+                    color = AggColor.OnBrightCodeMuted,
+                )
             }
         }
     }
@@ -439,7 +449,7 @@ fun IdCodeScreen(vm: MainViewModel) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black)
+                    .background(AggColor.BrightCodeBackdrop)
                     .pointerInput(Unit) { detectTapGestures(onTap = { fullscreen = false }) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -447,18 +457,22 @@ fun IdCodeScreen(vm: MainViewModel) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             state.selected.label,
-                            fontSize = 18.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
+                            style = AggType.FullscreenPlatformLabel,
+                            color = AggColor.OnBrightCode,
                         )
-                        Spacer(Modifier.height(16.dp))
-                        renderCode128(code.content, width = 1400, height = 420)?.let {
+                        Spacer(Modifier.height(Dimen.SpaceL))
+                        val barcode = rememberBarcode(
+                            code.content,
+                            BARCODE_FULLSCREEN_WIDTH,
+                            BARCODE_FULLSCREEN_HEIGHT,
+                        ).value
+                        if (barcode is BarcodeState.Ready) {
                             Image(
-                                bitmap = it.asImageBitmap(),
-                                contentDescription = "身份码条形码（全屏）",
+                                bitmap = barcode.bitmap,
+                                contentDescription = stringResource(R.string.cd_barcode_fullscreen),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(24.dp)
+                                    .padding(Dimen.SpaceXL)
                                     .aspectRatio(10f / 3f),
                                 contentScale = ContentScale.FillWidth,
                             )
@@ -466,14 +480,15 @@ fun IdCodeScreen(vm: MainViewModel) {
                         Spacer(Modifier.height(20.dp))
                         Text(
                             code.content,
-                            fontSize = 26.sp,
-                            letterSpacing = 3.sp,
-                            color = Color.White,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
+                            style = AggType.CodeNumberFullscreen,
+                            color = AggColor.OnBrightCode,
                         )
-                        Spacer(Modifier.height(12.dp))
-                        Text("单击屏幕退出全屏", fontSize = 13.sp, color = Color.Gray)
+                        Spacer(Modifier.height(Dimen.SpaceM))
+                        Text(
+                            stringResource(R.string.idcode_exit_fullscreen),
+                            style = AggType.Caption,
+                            color = AggColor.OnBrightCodeMuted,
+                        )
                     }
                 }
             }

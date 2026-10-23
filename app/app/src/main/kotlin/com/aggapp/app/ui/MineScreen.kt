@@ -34,7 +34,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,14 +44,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aggapp.app.ui.theme.AggColor
+import com.aggapp.app.ui.theme.AggType
+import com.aggapp.app.ui.theme.Dimen
+import com.aggapp.app.ui.theme.ShapeControl
 import com.aggapp.core.model.Platform
 
 /**
@@ -61,6 +63,12 @@ import com.aggapp.core.model.Platform
  * - 登录表单区：手机号+验证码协议登录为主，兜底粘贴入口折叠；
  * - 平台登录态总览卡片（各平台协议直连登录/兜底粘贴）。
  */
+/**
+ * 五张平台登录态卡片并排展示，圆角必须完全一致否则视觉参差。
+ * 提到文件级常量而非写在 Composable 内：后者会在每次重组时重建 RoundedCornerShape。
+ */
+private val PlatformCardShape = RoundedCornerShape(Dimen.RadiusControl)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MineScreen(vm: MineViewModel = hiltViewModel()) {
@@ -100,35 +108,32 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 Column(
                     Modifier
                         .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .padding(horizontal = Dimen.ScreenPadding, vertical = Dimen.CardPaddingCompact),
                 ) {
                     Text(
-                        "我的",
+                        stringResource(R.string.mine_title),
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = AggType.ScreenTitle,
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        "平台登录与账号管理",
+                        stringResource(R.string.mine_subtitle),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
+                        style = AggType.ScreenSubtitle,
                     )
                 }
             }
             Column(
-                Modifier.padding(horizontal = 16.dp),
+                Modifier.padding(horizontal = Dimen.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
             // ===== 顶部：5 平台登录态总览（点击展开对应登录表单）=====
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
                 Platform.entries.forEach { p ->
                     val ls = state.loginStates[p]
                     val selected = expanded == p
                     val accent = com.aggapp.app.ui.theme.Brand.PlatformColor[p]
                         ?: MaterialTheme.colorScheme.primary
-                    val greenGlow = Color(0xFF34C759)
-                    val cardShape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
                     Card(
                         onClick = { expanded = p },
                         modifier = Modifier
@@ -138,12 +143,13 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     // 已登录：绿色描边 + 绿色光晕
                                     Modifier
                                         .shadow(
-                                            6.dp, cardShape, clip = false,
-                                            ambientColor = greenGlow, spotColor = greenGlow,
+                                            6.dp, PlatformCardShape, clip = false,
+                                            ambientColor = AggColor.loggedIn,
+                                            spotColor = AggColor.loggedIn,
                                         )
                                 } else Modifier
                             ),
-                        shape = cardShape,
+                        shape = PlatformCardShape,
                         colors = CardDefaults.cardColors(
                             containerColor = when {
                                 selected -> MaterialTheme.colorScheme.primaryContainer
@@ -154,7 +160,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                         ),
                         border = when {
                             ls?.loggedIn == true ->
-                                androidx.compose.foundation.BorderStroke(1.5.dp, greenGlow)
+                                androidx.compose.foundation.BorderStroke(1.5.dp, AggColor.loggedIn)
                             else -> null
                         },
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -175,10 +181,10 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 when {
-                                    ls == null -> "未检查"
-                                    ls.loggedIn -> "已登录"
-                                    ls.needRelogin -> "需重登"
-                                    else -> "未登录"
+                                    ls == null -> stringResource(R.string.mine_login_state_unchecked)
+                                    ls.loggedIn -> stringResource(R.string.mine_login_state_logged_in)
+                                    ls.needRelogin -> stringResource(R.string.mine_login_state_need_relogin)
+                                    else -> stringResource(R.string.mine_login_state_logged_out)
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = when {
@@ -194,47 +200,50 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
             OutlinedButton(
                 onClick = { vm.refreshLoginStates() },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("重新检查所有登录态") }
+            ) { Text(stringResource(R.string.mine_recheck_all)) }
 
             // ===== 展开的平台登录表单 =====
             when (expanded) {
                 Platform.TAOBAO -> {
                     Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("淘宝（菜鸟驿站）· 短信登录", style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
-                                "输入手机号获取短信验证码，协议直连登录",
+                                stringResource(R.string.mine_form_taobao_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.mine_form_taobao_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             OutlinedTextField(
                                 value = phone,
                                 onValueChange = { phone = it },
-                                label = { Text("手机号") },
+                                label = { Text(stringResource(R.string.label_phone)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                             )
-                            Spacer(Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Spacer(Modifier.height(Dimen.SpaceS))
+                            Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
                                 OutlinedTextField(
                                     value = smsCode,
                                     onValueChange = { smsCode = it },
-                                    label = { Text("验证码") },
+                                    label = { Text(stringResource(R.string.label_sms_code)) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                 )
                                 Button(
                                     onClick = { vm.sendTaobaoSms(phone) },
                                     enabled = !state.busy,
-                                ) { Text("获取验证码") }
+                                ) { Text(stringResource(R.string.action_send_code)) }
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             Button(
                                 onClick = { vm.loginTaobao(smsCode) },
                                 enabled = !state.busy && state.smsSent && smsCode.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("登录") }
+                            ) { Text(stringResource(R.string.action_login)) }
                             LogoutRow(state.loginStates[Platform.TAOBAO]) { vm.logout(Platform.TAOBAO) }
                         }
                     }
@@ -242,42 +251,45 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
 
                 Platform.JD -> {
                     Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("京东 · 短信验证码登录", style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
-                                "手机号 + 短信验证码协议直连登录（滑块验证后发码）；pt_key 有效期约 1 年",
+                                stringResource(R.string.mine_form_jd_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.mine_form_jd_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             OutlinedTextField(
                                 value = phone,
                                 onValueChange = { phone = it },
-                                label = { Text("手机号") },
+                                label = { Text(stringResource(R.string.label_phone)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             Button(
                                 onClick = { vm.jdPrepareSms(phone) },
                                 enabled = !state.busy && phone.length == 11,
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("获取验证码") }
+                            ) { Text(stringResource(R.string.action_send_code)) }
                             if (state.jdSmsSent) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 OutlinedTextField(
                                     value = smsCode,
                                     onValueChange = { smsCode = it },
-                                    label = { Text("短信验证码") },
+                                    label = { Text(stringResource(R.string.label_sms_code_full)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 Button(
                                     onClick = { vm.jdVerifySms(smsCode) },
                                     enabled = !state.busy && smsCode.isNotBlank(),
                                     modifier = Modifier.fillMaxWidth(),
-                                ) { Text("登录") }
+                                ) { Text(stringResource(R.string.action_login)) }
                             }
                             state.jdCaptchaUrl?.let { url ->
                                 // 2026-10-21：本设备 Compose 容器内 WebView 不出帧，改用
@@ -293,29 +305,32 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                             Spacer(Modifier.height(4.dp))
                             var showJdPaste by remember { mutableStateOf(false) }
                             TextButton(onClick = { showJdPaste = !showJdPaste }) {
-                                Text(if (showJdPaste) "收起粘贴登录" else "粘贴 pt_key/pin 兜底")
+                                Text(
+                                    if (showJdPaste) stringResource(R.string.mine_form_paste_collapse)
+                                    else stringResource(R.string.mine_form_jd_paste_toggle),
+                                )
                             }
                             if (showJdPaste) {
                                 OutlinedTextField(
                                     value = jdPtKey,
                                     onValueChange = { jdPtKey = it },
-                                    label = { Text("pt_key") },
+                                    label = { Text(stringResource(R.string.mine_form_jd_pt_key)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                 )
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Spacer(Modifier.height(Dimen.SpaceS))
+                                Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
                                     OutlinedTextField(
                                         value = jdPin,
                                         onValueChange = { jdPin = it },
-                                        label = { Text("pin") },
+                                        label = { Text(stringResource(R.string.mine_form_jd_pin)) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true,
                                     )
                                     Button(
                                         onClick = { vm.loginJd(jdPtKey, jdPin) },
                                         enabled = !state.busy,
-                                    ) { Text("保存") }
+                                    ) { Text(stringResource(R.string.action_save)) }
                                 }
                             }
                             LogoutRow(state.loginStates[Platform.JD]) { vm.logout(Platform.JD) }
@@ -325,59 +340,65 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
 
                 Platform.SF -> {
                     Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("顺丰 · 短信验证码登录", style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
-                                "发码前需过极验滑块；身份码静态段一次获取、永久本地生成",
+                                stringResource(R.string.mine_form_sf_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.mine_form_sf_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             OutlinedTextField(
                                 value = phone,
                                 onValueChange = { phone = it },
-                                label = { Text("手机号") },
+                                label = { Text(stringResource(R.string.label_phone)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                             )
-                            Spacer(Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Spacer(Modifier.height(Dimen.SpaceS))
+                            Row(horizontalArrangement = Arrangement.spacedBy(Dimen.SpaceS)) {
                                 OutlinedTextField(
                                     value = smsCode,
                                     onValueChange = { smsCode = it },
-                                    label = { Text("验证码") },
+                                    label = { Text(stringResource(R.string.label_sms_code)) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                 )
                                 Button(
                                     onClick = { vm.sfStartCaptcha(phone) },
                                     enabled = !state.busy,
-                                ) { Text("获取验证码") }
+                                ) { Text(stringResource(R.string.action_send_code)) }
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             Button(
                                 onClick = { vm.loginSfSms(smsCode) },
                                 enabled = !state.busy && state.sfSmsSent && smsCode.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("登录") }
+                            ) { Text(stringResource(R.string.action_login)) }
                             Spacer(Modifier.height(4.dp))
                             var showSfPaste by remember { mutableStateOf(false) }
                             TextButton(onClick = { showSfPaste = !showSfPaste }) {
-                                Text(if (showSfPaste) "收起粘贴登录" else "粘贴 YJY-Auth 兜底（旧驿收发链路）")
+                                Text(
+                                    if (showSfPaste) stringResource(R.string.mine_form_paste_collapse)
+                                    else stringResource(R.string.mine_form_sf_paste_toggle),
+                                )
                             }
                             if (showSfPaste) {
                                 OutlinedTextField(
                                     value = sfToken,
                                     onValueChange = { sfToken = it },
-                                    label = { Text("YJY-Auth") },
+                                    label = { Text(stringResource(R.string.mine_form_sf_token)) },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 Button(
                                     onClick = { vm.loginSf(sfToken) },
                                     enabled = !state.busy,
                                     modifier = Modifier.fillMaxWidth(),
-                                ) { Text("保存") }
+                                ) { Text(stringResource(R.string.action_save)) }
                             }
                             LogoutRow(state.loginStates[Platform.SF]) { vm.logout(Platform.SF) }
                         }
@@ -400,19 +421,22 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
 
                 Platform.PDD -> {
                     Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("拼多多（多多驿站）· 扫码登录", style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
-                                "生成登录二维码保存到相册，拼多多 App 扫一扫相册识别（不踢 App 下线，token 约 1 年）",
+                                stringResource(R.string.mine_form_pdd_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.mine_form_pdd_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             Button(
                                 onClick = { vm.startPddQrLogin() },
                                 enabled = !state.busy,
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("扫码登录") }
+                            ) { Text(stringResource(R.string.mine_form_pdd_action)) }
                             LogoutRow(state.loginStates[Platform.PDD]) { vm.logout(Platform.PDD) }
                         }
                     }
@@ -421,22 +445,25 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 Platform.RYLL -> {
                     var ryllCaptcha by remember { mutableStateOf("") }
                     Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("如意邻里（圆通）· 短信验证码登录", style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(Dimen.CardPadding)) {
                             Text(
-                                "发短信需先输图形验证码；身份码为静态码，登录一次后永久本地生成",
+                                stringResource(R.string.mine_form_ryll_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(R.string.mine_form_ryll_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             OutlinedTextField(
                                 value = phone,
                                 onValueChange = { phone = it },
-                                label = { Text("手机号") },
+                                label = { Text(stringResource(R.string.label_phone)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                             )
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             // 图形验证码：点图换一张（发短信前置，README §3.2）
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 state.ryllVcodeBase64?.let { dataUrl ->
@@ -444,51 +471,54 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     if (bmp != null) {
                                         Image(
                                             bitmap = bmp.asImageBitmap(),
-                                            contentDescription = "图形验证码",
+                                            contentDescription = stringResource(R.string.cd_ryll_captcha),
                                             modifier = Modifier
                                                 .width(132.dp)
                                                 .height(44.dp)
                                                 .androidClickable { vm.ryllFetchVcode() },
                                         )
                                     } else {
-                                        Text("图形码解码失败", style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            stringResource(R.string.mine_form_ryll_captcha_failed),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
                                     }
                                 } ?: run {
                                     OutlinedButton(
                                         onClick = { vm.ryllFetchVcode() },
                                         enabled = !state.busy,
-                                    ) { Text("获取图形码") }
+                                    ) { Text(stringResource(R.string.mine_form_ryll_fetch_captcha)) }
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 OutlinedTextField(
                                     value = ryllCaptcha,
                                     onValueChange = { ryllCaptcha = it },
-                                    label = { Text("图形验证码") },
+                                    label = { Text(stringResource(R.string.mine_form_ryll_captcha_label)) },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                 )
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(Dimen.SpaceS))
                             Button(
                                 onClick = { vm.ryllSendSms(phone, ryllCaptcha) },
                                 enabled = !state.busy && phone.length == 11 && ryllCaptcha.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("发送短信验证码") }
+                            ) { Text(stringResource(R.string.mine_form_ryll_send_sms)) }
                             if (state.ryllSmsSent) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 OutlinedTextField(
                                     value = smsCode,
                                     onValueChange = { smsCode = it },
-                                    label = { Text("短信验证码") },
+                                    label = { Text(stringResource(R.string.label_sms_code_full)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 Button(
                                     onClick = { vm.ryllLogin(smsCode) },
                                     enabled = !state.busy && smsCode.isNotBlank(),
                                     modifier = Modifier.fillMaxWidth(),
-                                ) { Text("登录") }
+                                ) { Text(stringResource(R.string.action_login)) }
                             }
                             LogoutRow(state.loginStates[Platform.RYLL]) { vm.logout(Platform.RYLL) }
                         }
@@ -506,33 +536,41 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 OutlinedButton(
                     onClick = { showWx = true },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                ) { Text("联系作者") }
+                    shape = ShapeControl,
+                ) { Text(stringResource(R.string.mine_contact_author)) }
                 Button(
                     onClick = { showSkm = true },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeControl,
                     colors = ButtonDefaults.buttonColors(containerColor = com.aggapp.app.ui.theme.Brand.Amber),
-                ) { Text("赞助作者") }
+                ) { Text(stringResource(R.string.mine_sponsor)) }
 
                 // 居中弹窗：微信二维码
                 if (showWx) {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { showWx = false },
                         confirmButton = {
-                            TextButton(onClick = { showWx = false }) { Text("关闭") }
+                            TextButton(onClick = { showWx = false }) { Text(stringResource(R.string.action_close)) }
                         },
-                        title = { Text("联系作者", Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        title = {
+                            Text(
+                                stringResource(R.string.mine_contact_author),
+                                Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        },
                         text = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Image(
                                     painterResource(R.drawable.wx_qr),
-                                    contentDescription = "QQ群二维码",
+                                    // 原描述写的是「QQ群二维码」，与弹窗标题「联系作者」不符，
+                                    // 这里按弹窗语义统一，避免 TalkBack 播报与界面文案矛盾
+                                    contentDescription = stringResource(R.string.cd_contact_qr),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 Text(
-                                    "QQ扫码加入交流群",
+                                    stringResource(R.string.mine_contact_qr_tip),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -545,19 +583,25 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { showSkm = false },
                         confirmButton = {
-                            TextButton(onClick = { showSkm = false }) { Text("关闭") }
+                            TextButton(onClick = { showSkm = false }) { Text(stringResource(R.string.action_close)) }
                         },
-                        title = { Text("赞助作者", Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        title = {
+                            Text(
+                                stringResource(R.string.mine_sponsor),
+                                Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        },
                         text = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Image(
                                     painterResource(R.drawable.skm_qr),
-                                    contentDescription = "赞助码",
+                                    contentDescription = stringResource(R.string.cd_sponsor_qr),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(Dimen.SpaceS))
                                 Text(
-                                    "感谢每一份支持",
+                                    stringResource(R.string.mine_sponsor_tip),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -572,21 +616,29 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 onClick = { vm.exportDebugLog() },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-            ) { Text("导出调试日志（操作/请求/登录态）") }
+                shape = ShapeControl,
+            ) { Text(stringResource(R.string.mine_export_log)) }
 
             // 淘宝多账号选择弹窗（手机号绑定多个淘宝账号，登录前需选择）
             if (state.tbAccounts.isNotEmpty()) {
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { vm.tbDismissAccountSelect() },
                     confirmButton = {
-                        TextButton(onClick = { vm.tbDismissAccountSelect() }) { Text("取消") }
+                        TextButton(onClick = { vm.tbDismissAccountSelect() }) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
                     },
-                    title = { Text("选择淘宝账号", Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                    title = {
+                        Text(
+                            stringResource(R.string.mine_tb_account_select_title),
+                            Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                "该手机号绑定了多个账号，请选择要登录的账号",
+                                stringResource(R.string.mine_tb_account_select_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -599,21 +651,27 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
+                                    // 服务端偶尔返回空昵称，用占位文案兜底，避免列表出现空白行
                                     Text(
-                                        acc.nick.ifEmpty { "淘宝账号" },
+                                        if (acc.nick.isEmpty()) {
+                                            stringResource(R.string.mine_tb_account_fallback)
+                                        } else acc.nick,
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
                                         modifier = Modifier.weight(1f),
                                     )
                                     if (acc.mostFrequent) {
                                         Text(
-                                            "登录次数最多",
+                                            stringResource(R.string.mine_tb_account_most_frequent),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary,
                                         )
                                     } else if (acc.lastActiveTime.isNotEmpty()) {
                                         Text(
-                                            "最近活跃 ${acc.lastActiveTime}",
+                                            stringResource(
+                                                R.string.mine_tb_account_last_active,
+                                                acc.lastActiveTime,
+                                            ),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -631,9 +689,15 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { vm.tbDismissRiskCheck() },
                     confirmButton = {
-                        TextButton(onClick = { vm.tbDismissRiskCheck() }) { Text("关闭") }
+                        TextButton(onClick = { vm.tbDismissRiskCheck() }) { Text(stringResource(R.string.action_close)) }
                     },
-                    title = { Text("安全验证", Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                    title = {
+                        Text(
+                            stringResource(R.string.mine_risk_verify_title),
+                            Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    },
                     text = {
                         androidx.compose.ui.viewinterop.AndroidView(
                             modifier = Modifier.fillMaxWidth().height(420.dp),
@@ -687,7 +751,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
             // Cookie 出现 PDDAccessToken 即自动落库；「收尾登录」按钮兜底。
             state.pddVerifyUrl?.let { url ->
                 WebViewLoginDialog(
-                    title = "拼多多 · 安全验证",
+                    title = stringResource(R.string.mine_pdd_verify_title),
                     loginUrl = url,
                     checkSuccess = vm::pddDetectLogin,
                     onCredential = vm::onPddWebViewCredential,
@@ -695,7 +759,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
                     tip = null, // 动态显示页面提取的题目文字
                     desktopUa = true,
                     clearCookies = true,
-                    actionLabel = "页面已提示通过？点此收尾登录",
+                    actionLabel = stringResource(R.string.mine_pdd_verify_action),
                     onAction = vm::pddManualFinishVerify,
                 )
             }
@@ -709,7 +773,7 @@ fun MineScreen(vm: MineViewModel = hiltViewModel()) {
 @Composable
 private fun LogoutRow(ls: com.aggapp.core.model.PlatformLoginState?, onLogout: () -> Unit) {
     if (ls != null && (ls.loggedIn || ls.needRelogin)) {
-        TextButton(onClick = onLogout) { Text("登出该账号") }
+        TextButton(onClick = onLogout) { Text(stringResource(R.string.action_logout)) }
     }
 }
 

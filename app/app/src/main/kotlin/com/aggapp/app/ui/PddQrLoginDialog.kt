@@ -44,8 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.aggapp.app.R
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -98,8 +100,11 @@ fun PddQrLoginDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("拼多多 · 扫码登录", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onDismiss) { Text("关闭") }
+                Text(
+                    stringResource(R.string.dialog_pdd_qr_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
             }
             Text(
                 state.pddQrHint ?: "",
@@ -112,8 +117,10 @@ fun PddQrLoginDialog(
                 qrBitmap?.let { bmp ->
                     Image(
                         bitmap = bmp.asImageBitmap(),
-                        contentDescription = "登录二维码",
-                        modifier = Modifier.size(240.dp).background(androidx.compose.ui.graphics.Color.White),
+                        contentDescription = stringResource(R.string.cd_login_qr),
+                        // 二维码底色必须纯白：深色模式下浅底会降低对比度，手机相机容易识别失败
+                        modifier = Modifier.size(240.dp)
+                            .background(androidx.compose.ui.graphics.Color.White),
                         contentScale = ContentScale.Fit,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -121,17 +128,22 @@ fun PddQrLoginDialog(
                         onClick = {
                             scope.launch {
                                 val ok = saveQrToGallery(context, bmp)
+                                // 协程内已脱离组合作用域，只能走 getString
                                 Toast.makeText(
                                     context,
-                                    if (ok) "已保存到相册，请打开拼多多 App 扫一扫 → 相册选择本图并确认登录"
-                                    else "保存到相册失败",
+                                    context.getString(
+                                        if (ok) R.string.msg_qr_saved else R.string.msg_qr_save_failed
+                                    ),
                                     Toast.LENGTH_LONG,
                                 ).show()
                             }
                         },
-                    ) { Text("保存到相册") }
+                    ) { Text(stringResource(R.string.action_save_to_gallery)) }
                 } ?: run {
-                    Text("正在生成二维码…", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(R.string.dialog_qr_generating),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
 
@@ -141,7 +153,7 @@ fun PddQrLoginDialog(
                 OutlinedTextField(
                     value = smsCode,
                     onValueChange = { smsCode = it.take(6) },
-                    label = { Text("短信验证码") },
+                    label = { Text(stringResource(R.string.label_sms_code_full)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -151,7 +163,7 @@ fun PddQrLoginDialog(
                     onClick = { onVerifySms(smsCode) },
                     enabled = smsCode.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("验证并登录") }
+                ) { Text(stringResource(R.string.action_verify_and_login)) }
             }
 
             // type=101 知识验证：原生选择题（challenge_captcha/challenge_verify，2026-10-21 实测协议）
@@ -160,10 +172,20 @@ fun PddQrLoginDialog(
                 var single by remember(q.questionId) { mutableStateOf<String?>(null) }
                 var multiSet by remember(q.questionId) { mutableStateOf(setOf<String>()) }
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    q.desc.ifBlank { "请选择正确答案" } + if (multi) "（需选 ${q.correctAnswerCnt} 项）" else "（单选）",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                // 题干偶发为空（服务端只下发选项图），用兜底文案 + 选择模式提示拼装，
+                // 否则会渲染出一个空标题让用户不知道要做什么
+                val baseTitle = if (q.desc.isBlank()) {
+                    stringResource(R.string.dialog_quiz_pick_answer)
+                } else {
+                    q.desc
+                }
+                val modeHint = if (multi) {
+                    stringResource(R.string.dialog_quiz_multi_hint, q.correctAnswerCnt)
+                } else {
+                    stringResource(R.string.dialog_quiz_single_hint)
+                }
+                val quizTitle = baseTitle + modeHint
+                Text(quizTitle, style = MaterialTheme.typography.titleMedium)
                 if (state.pddQuizMsg != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(state.pddQuizMsg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -201,7 +223,7 @@ fun PddQrLoginDialog(
                                 ) {
                                     coil.compose.AsyncImage(
                                         model = url,
-                                        contentDescription = "选项图片",
+                                        contentDescription = stringResource(R.string.cd_option_image),
                                         modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                                         contentScale = ContentScale.Crop,
                                     )
@@ -249,7 +271,7 @@ fun PddQrLoginDialog(
                             if (text.startsWith("http")) {
                                 coil.compose.AsyncImage(
                                     model = text,
-                                    contentDescription = "选项图片",
+                                    contentDescription = stringResource(R.string.cd_option_image),
                                     modifier = Modifier.fillMaxWidth().height(96.dp),
                                     contentScale = ContentScale.Fit,
                                 )
@@ -264,7 +286,21 @@ fun PddQrLoginDialog(
                     onClick = { onAnswerQuiz(selected) },
                     enabled = canSubmit,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (state.busy) "提交中…" else if (multi) "提交答案（${selected.size}/${q.correctAnswerCnt}）" else "提交答案") }
+                ) {
+                    Text(
+                        if (state.busy) {
+                            stringResource(R.string.action_submitting)
+                        } else if (multi) {
+                            stringResource(
+                                R.string.action_submit_progress,
+                                selected.size,
+                                q.correctAnswerCnt,
+                            )
+                        } else {
+                            stringResource(R.string.action_submit_answer)
+                        },
+                    )
+                }
             }
         }
     }

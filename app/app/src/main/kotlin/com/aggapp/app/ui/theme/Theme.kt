@@ -1,13 +1,11 @@
 package com.aggapp.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 
 private val LightColors = lightColorScheme(
     primary = Brand.Indigo,
@@ -54,18 +52,12 @@ private val DarkColors = darkColorScheme(
     outline = Color(0xFF928F9A),
 )
 
-/** 重构后圆角体系：大卡 24dp，中卡 16dp，胶囊 full */
-val CardShapeLarge = RoundedCornerShape(24.dp)
-val CardShapeMedium = RoundedCornerShape(16.dp)
-
 @Composable
 fun AggTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors,
-        shapes = MaterialTheme.shapes.copy(
-            large = CardShapeLarge,
-            medium = CardShapeMedium,
-        ),
+        typography = AggTypography,
+        shapes = AggShapes,
         content = content,
     )
 }

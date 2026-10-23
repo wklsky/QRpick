@@ -19,8 +19,10 @@ import com.aggapp.platform.api.AppLog
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aggapp.app.R
 
 /**
  * 顺丰极验 v4 滑块弹窗（sf.md §2.5：MIMP 独立登录链路；发码缺 captcha_args 报 700001）：
@@ -45,11 +47,11 @@ fun SfGeetestDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("安全验证")
-                TextButton(onClick = onDismiss) { Text("关闭") }
+                Text(stringResource(R.string.dialog_security_verify))
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
             }
             Text(
-                "完成滑块验证后将自动向该手机号发送短信验证码",
+                stringResource(R.string.dialog_geetest_hint),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

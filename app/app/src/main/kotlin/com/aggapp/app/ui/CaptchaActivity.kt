@@ -13,6 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.aggapp.app.R
 import com.aggapp.platform.api.AppLog
 
 /**
@@ -29,6 +30,16 @@ class CaptchaActivity : Activity() {
         /** true=本地 assets 页（顺丰极验 sf_geetest.html，需 AssetLoader + 极验 JSONP 代理） */
         const val EXTRA_ASSET = "asset"
         var onResult: ((String?) -> Unit)? = null
+
+        /** 遮罩色：约 53% 黑，与 Material3 scrim 标准值一致，保证下方页面仍隐约可见 */
+        private val SCRIM_COLOR = 0x88000000.toInt()
+
+        /** 卡片圆角，与 Dimen.RadiusCard（16dp）保持一致 */
+        private const val CARD_CORNER_DP = 16
+
+        /** 亮色主题下的文本色，对应 colorScheme.onSurface / onSurfaceVariant */
+        private val TEXT_PRIMARY = 0xFF1C1B1F.toInt()
+        private val TEXT_SECONDARY = 0xFF5A5A5F.toInt()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -41,26 +52,29 @@ class CaptchaActivity : Activity() {
 
         // 半透明遮罩全屏，居中一张圆角卡片（对话框式）
         val root = android.widget.FrameLayout(this).apply {
-            setBackgroundColor(Color.parseColor("#88000000"))
+            setBackgroundColor(SCRIM_COLOR)
         }
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = android.graphics.drawable.GradientDrawable().apply {
                 setColor(Color.WHITE)
-                cornerRadius = 16 * dp
+                cornerRadius = CARD_CORNER_DP * dp
             }
         }
+        // 本 Activity 是纯 View 体系、不在 Compose 主题树内（原因见类注释），
+        // 因此配色与字号只能用固定常量；改动时需同步 Theme.kt 的亮色色表
         val header = TextView(this).apply {
-            text = "安全验证"
-            setTextColor(Color.parseColor("#1C1B1F"))
-            textSize = 16f
+            setText(R.string.dialog_security_verify)
+            setTextColor(TEXT_PRIMARY)
+            // 必须显式用 SP 单位，直接赋 textSize 会被当成 px，大字体模式下文字偏小
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
             gravity = Gravity.CENTER
             setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (4 * dp).toInt())
         }
         val subtitle = TextView(this).apply {
-            text = "完成验证后将自动向该手机号发送短信验证码"
-            setTextColor(Color.parseColor("#5A5A5F"))
-            textSize = 12f
+            setText(R.string.dialog_captcha_auto_sms)
+            setTextColor(TEXT_SECONDARY)
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
             setPadding((24 * dp).toInt(), 0, (24 * dp).toInt(), (8 * dp).toInt())
         }

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============ 通用 ============ -->
+    <string name="action_refresh">刷新</string>
+    <string name="action_login">登录</string>
+    <string name="action_close">关闭</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_save">保存</string>
+    <string name="action_retry">重试</string>
+    <string name="action_logout">登出该账号</string>
+    <string name="action_send_code">获取验证码</string>
+    <string name="label_phone">手机号</string>
+    <string name="label_sms_code">验证码</string>
+    <string name="label_sms_code_full">短信验证码</string>
+    <string name="error_unknown">未知错误</string>
+    <string name="msg_copied">已复制：%1$s</string>
+
+    <!-- ============ 底部导航 ============ -->
+    <string name="tab_idcode">身份码</string>
+    <string name="tab_express">快递</string>
+    <string name="tab_mine">我的</string>
+    <string name="cd_tab_idcode">身份码页</string>
+    <string name="cd_tab_express">快递页</string>
+    <string name="cd_tab_mine">我的页</string>
+
+    <!-- ============ 身份码页 ============ -->
+    <string name="idcode_title">身份码</string>
+    <string name="idcode_empty">暂无身份码\n单击条码区域或下拉刷新</string>
+    <string name="idcode_all_empty">暂无身份码（未登录或拉取失败）</string>
+    <string name="idcode_tap_hint">单击刷新 · 双击全屏</string>
+    <string name="idcode_countdown">服务端对齐刷新 %1$d:%2$02d</string>
+    <string name="idcode_not_logged_in">⚠ 该平台未登录，请到「我的」页登录后查看身份码</string>
+    <string name="idcode_action_fullscreen">全屏亮码</string>
+    <string name="idcode_action_all">全部平台码</string>
+    <string name="idcode_exit_fullscreen">单击屏幕退出全屏</string>
+    <string name="idcode_exit_all">单击屏幕退出</string>
+    <string name="idcode_render_failed">条码渲染失败</string>
+    <string name="cd_barcode">身份码条形码</string>
+    <string name="cd_barcode_of">%1$s身份码条形码</string>
+    <string name="cd_barcode_fullscreen">身份码条形码（全屏）</string>
+    <string name="cd_fullscreen">全屏亮码</string>
+    <string name="cd_all_platforms">全部平台码</string>
+
+    <!-- ============ 快递页 ============ -->
+    <string name="express_title">快递</string>
+    <string name="express_subtitle">包裹动态与取件码查询</string>
+    <string name="express_label_waybill">运单号</string>
+    <string name="express_action_search">查询</string>
+    <string name="express_pickup_code_with_id">取件码（%1$s）· 点击复制</string>
+    <string name="express_empty">暂无待取件包裹</string>
+    <string name="express_suffix_title">验证收件手机后 4 位查询 %1$s</string>
+    <string name="express_suffix_dismiss">收回</string>
+    <string name="express_suffix_label">手机后4位</string>
+    <string name="express_suffix_action">验证查询</string>
+    <string name="express_status_wait_pickup">待取件</string>
+    <string name="express_status_picked">已取出</string>
+    <string name="express_status_timeout">超时</string>
+    <string name="express_status_unknown">未知</string>
+    <string name="express_arrived_at">入仓 %1$s</string>
+    <string name="express_code_source">来自%1$s</string>
+    <string name="express_search_ok">查询成功</string>
+    <string name="express_route">%1$s → %2$s</string>
+    <string name="express_sender">寄 %1$s</string>
+    <string name="express_receiver">收 %1$s</string>
+    <string name="express_pickup_code">取件码 %1$s</string>
+    <string name="express_tracks_collapse">收起轨迹</string>
+    <string name="express_tracks_expand">展开全部 %1$d 条轨迹</string>
+    <string name="cd_search">查询</string>
+    <string name="cd_station">驿站</string>
+
+    <!-- ============ 我的页 ============ -->
+    <string name="mine_title">我的</string>
+    <string name="mine_subtitle">平台登录与账号管理</string>
+    <string name="mine_login_state_unchecked">未检查</string>
+    <string name="mine_login_state_logged_in">已登录</string>
+    <string name="mine_login_state_need_relogin">需重登</string>
+    <string name="mine_login_state_logged_out">未登录</string>
+    <string name="mine_recheck_all">重新检查所有登录态</string>
+
+    <string name="mine_form_taobao_title">淘宝（菜鸟驿站）· 短信登录</string>
+    <string name="mine_form_taobao_desc">输入手机号获取短信验证码，协议直连登录</string>
+
+    <string name="mine_form_jd_title">京东 · 短信验证码登录</string>
+    <string name="mine_form_jd_desc">手机号 + 短信验证码协议直连登录（滑块验证后发码）；pt_key 有效期约 1 年</string>
+    <string name="mine_form_jd_paste_toggle">粘贴 pt_key/pin 兜底</string>
+    <string name="mine_form_paste_collapse">收起粘贴登录</string>
+    <string name="mine_form_jd_pt_key">pt_key</string>
+    <string name="mine_form_jd_pin">pin</string>
+
+    <string name="mine_form_sf_title">顺丰 · 短信验证码登录</string>
+    <string name="mine_form_sf_desc">发码前需过极验滑块；身份码静态段一次获取、永久本地生成</string>
+    <string name="mine_form_sf_paste_toggle">粘贴 YJY-Auth 兜底（旧驿收发链路）</string>
+    <string name="mine_form_sf_token">YJY-Auth</string>
+
+    <string name="mine_form_pdd_title">拼多多（多多驿站）· 扫码登录</string>
+    <string name="mine_form_pdd_desc">生成登录二维码保存到相册，拼多多 App 扫一扫相册识别（不踢 App 下线，token 约 1 年）</string>
+    <string name="mine_form_pdd_action">扫码登录</string>
+
+    <string name="mine_form_ryll_title">如意邻里（圆通）· 短信验证码登录</string>
+    <string name="mine_form_ryll_desc">发短信需先输图形验证码；身份码为静态码，登录一次后永久本地生成</string>
+    <string name="mine_form_ryll_captcha_label">图形验证码</string>
+    <string name="mine_form_ryll_captcha_failed">图形码解码失败</string>
+    <string name="mine_form_ryll_fetch_captcha">获取图形码</string>
+    <string name="mine_form_ryll_send_sms">发送短信验证码</string>
+    <string name="cd_ryll_captcha">图形验证码，点击换一张</string>
+
+    <string name="mine_contact_author">联系作者</string>
+    <string name="mine_sponsor">赞助作者</string>
+    <string name="mine_contact_qr_tip">扫码加入交流群</string>
+    <string name="mine_sponsor_tip">感谢每一份支持</string>
+    <string name="cd_contact_qr">联系作者二维码</string>
+    <string name="cd_sponsor_qr">赞助码</string>
+
+    <string name="mine_export_log">导出调试日志（操作/请求/登录态）</string>
+
+    <string name="mine_tb_account_select_title">选择淘宝账号</string>
+    <string name="mine_tb_account_select_desc">该手机号绑定了多个账号，请选择要登录的账号</string>
+    <string name="mine_tb_account_fallback">淘宝账号</string>
+    <string name="mine_tb_account_most_frequent">登录次数最多</string>
+    <string name="mine_tb_account_last_active">最近活跃 %1$s</string>
+
+    <string name="mine_risk_verify_title">安全验证</string>
+    <string name="mine_pdd_verify_title">拼多多 · 安全验证</string>
+    <string name="mine_pdd_verify_action">页面已提示通过？点此收尾登录</string>
+
+    <!-- ============ 通用弹窗 / 验证 ============ -->
+    <string name="dialog_security_verify">安全验证</string>
+    <string name="dialog_webview_security_prefix">为了您的资金安全，请进行安全验证</string>
+    <string name="dialog_geetest_hint">完成滑块验证后将自动向该手机号发送短信验证码</string>
+    <string name="dialog_captcha_auto_sms">完成验证后将自动向该手机号发送短信验证码</string>
+    <string name="action_open_in_browser">系统浏览器打开</string>
+    <string name="dialog_webview_manual_confirm">选好了但页面没有确认按钮？点此外置确认</string>
+
+    <string name="dialog_pdd_qr_title">拼多多 · 扫码登录</string>
+    <string name="cd_login_qr">登录二维码</string>
+    <string name="action_save_to_gallery">保存到相册</string>
+    <string name="dialog_qr_generating">正在生成二维码…</string>
+    <string name="msg_qr_saved">已保存到相册，请打开拼多多 App 扫一扫 → 相册选择本图并确认登录</string>
+    <string name="msg_qr_save_failed">保存到相册失败</string>
+    <string name="action_verify_and_login">验证并登录</string>
+
+    <string name="dialog_quiz_pick_answer">请选择正确答案</string>
+    <string name="dialog_quiz_multi_hint">（需选 %1$d 项）</string>
+    <string name="dialog_quiz_single_hint">（单选）</string>
+    <string name="cd_option_image">选项图片</string>
+    <string name="action_submit_answer">提交答案</string>
+    <string name="action_submitting">提交中…</string>
+    <string name="action_submit_progress">提交答案（%1$d/%2$d）</string>
+
+</resources>
